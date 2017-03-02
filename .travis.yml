@@ -6,4 +6,4 @@ jdk:
 env:
   - PROJECT_DIR=lazy
 
-script: cd $PROJECT_DIR
+before_install: cd $PROJECT_DIR
