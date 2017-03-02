@@ -14,7 +14,7 @@ import static org.junit.Assert.assertTrue;
 public class LazyFactoryTest {
     private int counter;
     private String testMessage = "Supplier result";
-    private Supplier supplier = new Supplier() {
+    private Supplier<String> supplier = new Supplier<String>() {
         @Override
         public String get() {
             counter++;
@@ -38,8 +38,8 @@ public class LazyFactoryTest {
     @Test
     public void singleLazyTest() {
         assertEquals(0, counter);
-        Lazy lazyWithString = LazyFactory.createSingleLazy(supplier);
-        String actualResult = (String) lazyWithString.get();
+        Lazy<String> lazyWithString = LazyFactory.createSingleLazy(supplier);
+        String actualResult = lazyWithString.get();
         assertEquals(testMessage, actualResult);
         assertEquals(1, counter);
         assertSame(actualResult, lazyWithString.get());
