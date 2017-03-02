@@ -89,7 +89,7 @@ public class LazyFactory {
      * @param supplier вычисление, которое необходимо произвести.
      * @return ленивое вычисление в многопоточном режиме.
      */
-    public static <T> LockFreeLazy createLockFreeLazy(Supplier<T> supplier) {
+    public static <T> Lazy<T> createLockFreeLazy(Supplier<T> supplier) {
         return new LockFreeLazy<>(supplier);
     }
 
@@ -97,7 +97,7 @@ public class LazyFactory {
      * Lock-free реализация ленивого вычисления с гарантией работы в многопоточном режиме.
      * @param <T> тип результата вычисления.
      */
-    private static class LockFreeLazy<T> implements Lazy {
+    private static class LockFreeLazy<T> implements Lazy<T> {
         private static final Object marker = new Object();
         private Supplier<T> supplier;
         private volatile Object result = marker;
