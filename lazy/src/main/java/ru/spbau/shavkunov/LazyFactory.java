@@ -118,7 +118,7 @@ public class LazyFactory {
                 // для зануления supplier, чтобы не было гонок на supplier.get()
                 Supplier<T> localSupplierReference = supplier;
                 if (localSupplierReference != null) {
-                    resultUpdater.compareAndSet(this, marker, supplier.get());
+                    resultUpdater.compareAndSet(this, marker, localSupplierReference.get());
                     supplier = null;
                 }
             }
