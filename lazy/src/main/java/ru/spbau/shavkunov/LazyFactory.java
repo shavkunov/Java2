@@ -58,7 +58,7 @@ public class LazyFactory {
      * @param <T> тип результата вычисления.
      */
     private static class ConcurrentLazy<T> implements Lazy<T> {
-        private volatile T result = marker;
+        private volatile Object result = marker;
         private Supplier<T> supplier;
         private final static Object marker = new Object();
 
@@ -80,7 +80,7 @@ public class LazyFactory {
                 }
             }
 
-            return result;
+            return (T) result;
         }
     }
 
