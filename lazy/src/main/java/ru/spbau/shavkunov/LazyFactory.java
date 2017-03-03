@@ -58,8 +58,9 @@ public class LazyFactory {
      * @param <T> тип результата вычисления.
      */
     private static class ConcurrentLazy<T> implements Lazy<T> {
-        private T result;
+        private volatile T result = marker;
         private Supplier<T> supplier;
+        private final static Object marker = new Object();
 
         public ConcurrentLazy (Supplier<T> supplier) {
             this.supplier = supplier;
@@ -70,9 +71,9 @@ public class LazyFactory {
          */
         @Override
         public T get() {
-            if (supplier != null) {
+            if (result == marker) {
                 synchronized (this) {
-                    if (supplier != null) {
+                    if (result == marker) {
                         result = supplier.get();
                         supplier = null;
                     }
