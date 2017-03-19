@@ -1,0 +1,9 @@
+language: java
+
+jdk:
+  - oraclejdk8
+
+env:
+  - PROJECT_DIR=lazy
+
+before_install: cd $PROJECT_DIR
