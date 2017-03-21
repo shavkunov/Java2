@@ -45,11 +45,15 @@ public class Repository {
     }
 
     public Path getIndexPath() {
-        return this.rootDirectory.resolve(INDEX_FILE);
+        return rootDirectory.resolve(INDEX_FILE);
     }
 
     public Path getObjectsPath() {
-        return this.rootDirectory.resolve(OBJECTS_FOLDER);
+        return rootDirectory.resolve(OBJECTS_FOLDER);
+    }
+
+    public Path getCurrentBranchName() {
+        return rootDirectory.resolve(REFERENCES_FOLDER);
     }
 
     public static Repository getRepository(Path path) throws IOException, NoRepositoryException {

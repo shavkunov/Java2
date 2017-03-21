@@ -7,10 +7,8 @@ import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import static ru.spbau.shavkunov.vcs.Constants.OBJECTS_FOLDER;
 
@@ -19,19 +17,20 @@ public class Commit extends VcsObjectWithHash {
     private String author;
     private String message;
     private String treeHash;
-    private byte[] content;
 
-    public Commit(String author, String message, String treeHash, List<Commit> parentCommits) throws IOException {
+    public Commit(String author, String message, String treeHash, List<String> parentCommits, Repository repository)
+                 throws IOException {
         this.date = new Date();
         this.author = author;
         this.message = message;
         this.treeHash = treeHash;
 
-        content = getContent(parentCommits);
+        byte[] content = getContent(parentCommits);
         hash = DigestUtils.sha1Hex(content);
+        Files.write(repository.getObjectsPath().resolve(hash), content);
     }
 
-    private byte[] getContent(List<Commit> parentCommits) throws IOException {
+    private byte[] getContent(List<String> parentCommits) throws IOException {
         byte[] res;
         try (ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
              ObjectOutputStream output = new ObjectOutputStream(byteArrayOutputStream)) {
@@ -40,12 +39,9 @@ public class Commit extends VcsObjectWithHash {
             output.writeObject(author);
             output.writeObject(message);
             output.writeObject(treeHash);
-            ArrayList<String> hashParentCommits = new ArrayList<>(parentCommits.stream()
-                    .map(VcsObjectWithHash::getHash)
-                    .collect(Collectors.toList()));
 
-            output.writeObject(hashParentCommits);
-            output.writeObject(hashParentCommits);
+            output.writeObject(parentCommits);
+            output.writeObject(parentCommits);
 
             output.flush();
             res = byteArrayOutputStream.toByteArray();
@@ -57,10 +53,5 @@ public class Commit extends VcsObjectWithHash {
     @Override
     public Path getPathToObject(Repository repository) {
         return repository.getRootDirectory().resolve(OBJECTS_FOLDER).resolve(hash);
-    }
-
-    @Override
-    public void saveToStorage(Repository repository) throws IOException {
-        Files.write(repository.getObjectsPath().resolve(hash), content);
     }
 }

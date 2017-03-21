@@ -8,51 +8,53 @@ import java.io.ObjectOutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Set;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
 
 import static ru.spbau.shavkunov.vcs.Constants.OBJECTS_FOLDER;
 
 public class Tree extends VcsObjectWithHash {
-    private TreeSet<ObjectWithName<Blob>> blobFiles;
-    private TreeSet<ObjectWithName<Tree>> treeFiles;
-    private byte[] content = null;
+    private Set<ObjectWithName<Blob>> blobFiles;
+    private Set<Tree> treeFiles;
 
-    public Tree(TreeSet<ObjectWithName<Blob>> blobFiles, TreeSet<ObjectWithName<Tree>> treeFiles) throws IOException {
+    public Tree(Set<ObjectWithName<Blob>> blobFiles, Set<Tree> treeFiles, Repository repository)
+                throws IOException {
         this.blobFiles = blobFiles;
         this.treeFiles = treeFiles;
 
-        content = getContent();
+        byte[] content = getContent();
         hash = DigestUtils.sha1Hex(content);
+        Files.write(repository.getObjectsPath().resolve(hash), content);
+    }
+
+    public Tree() {
+        blobFiles = new TreeSet<>();
+        treeFiles = new TreeSet<>();
     }
 
     private byte[] getContent() throws IOException {
-        if (content == null) {
-            try (ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-                 ObjectOutputStream output = new ObjectOutputStream(byteArrayOutputStream)) {
+        byte[] content;
+        try (ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+             ObjectOutputStream output = new ObjectOutputStream(byteArrayOutputStream)) {
 
-                serializeTreeSetNamedContent(output, blobFiles);
-                serializeTreeSetNamedContent(output, treeFiles);
-                output.flush();
-                content = byteArrayOutputStream.toByteArray();
-            }
+            output.writeObject(new ArrayList<>(blobFiles.stream()
+                                                        .map(ObjectWithName::getName)
+                                                        .collect(Collectors.toList())));
+            output.writeObject(treeFiles);
+            output.flush();
+            content = byteArrayOutputStream.toByteArray();
         }
 
         return content;
     }
 
-    @Override
-    public void saveToStorage(Repository repository) throws IOException {
-        Files.write(repository.getObjectsPath().resolve(hash), content);
+    public void addBlob(Blob blob, String name) {
+        blobFiles.add(new ObjectWithName<>(blob, name));
     }
 
-    private void serializeTreeSetNamedContent(ObjectOutputStream output, TreeSet<? extends ObjectWithName> data)
-                                              throws IOException {
-        ArrayList<String> names = new ArrayList<>(data.stream()
-                                                      .map(ObjectWithName::getName)
-                                                      .collect(Collectors.toList()));
-
-        output.writeObject(names);
+    public void addChild(Tree tree) {
+        treeFiles.add(tree);
     }
 
 
