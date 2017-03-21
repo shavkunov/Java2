@@ -1,9 +1,7 @@
 package ru.spbau.shavkunov.vcs;
 
-abstract class VcsObject {
-    protected String hash;
+import java.nio.file.Path;
 
-    public String getHash() {
-        return hash;
-    }
+interface VcsObject {
+    Path getPathToObject(Repository repository);
 }

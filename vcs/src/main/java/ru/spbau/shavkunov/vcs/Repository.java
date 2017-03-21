@@ -1,19 +1,22 @@
 package ru.spbau.shavkunov.vcs;
 
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.NotDirectoryException;
 import java.nio.file.Path;
 
+import static ru.spbau.shavkunov.vcs.Constants.*;
+
 /**
  * Класс, осуществляющий всю внутреннюю работу с репозиторием.
  */
 public class Repository {
-    private static final String OBJECTS_FOLDER = "objects";
-    private static final String REFERENCES_FOLDER = "references";
-    private static final String VCS_FOLDER = ".vsc";
-
     private Path rootDirectory;
+
+    public Path getRootDirectory() {
+        return rootDirectory;
+    }
 
     /**
      * Инициализация репозитория.
@@ -31,6 +34,22 @@ public class Repository {
         Files.createDirectory(rootDir);
         Files.createDirectory(rootDir.resolve(OBJECTS_FOLDER));
         Files.createDirectory(rootDir.resolve(REFERENCES_FOLDER));
+        Files.createFile(rootDir.resolve(INDEX_FILE));
+
+        Path pathToHead = rootDir.resolve(HEAD);
+        Files.createFile(pathToHead);
+        FileOutputStream fileOutputStream = new FileOutputStream(pathToHead.toFile());
+        fileOutputStream.write(DEFAULT_BRANCH_NAME.getBytes());
+        fileOutputStream.flush();
+        fileOutputStream.close();
+    }
+
+    public Path getIndexPath() {
+        return this.rootDirectory.resolve(INDEX_FILE);
+    }
+
+    public Path getObjectsPath() {
+        return this.rootDirectory.resolve(OBJECTS_FOLDER);
     }
 
     public static Repository getRepository(Path path) throws IOException, NoRepositoryException {
