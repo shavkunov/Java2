@@ -101,6 +101,10 @@ public class Repository {
         this.rootDirectory = rootDirectory;
     }
 
+    public void deleteBranch(String branchName) throws IOException {
+        Files.delete(getReferencesPath().resolve(branchName));
+    }
+
     public void createNewBranch(String branchName, String commitHash) throws BranchAlreadyExistsException, IOException {
         if (isBranchExists(branchName)) {
             throw new BranchAlreadyExistsException();

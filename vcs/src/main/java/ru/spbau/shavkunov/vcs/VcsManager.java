@@ -1,5 +1,6 @@
 package ru.spbau.shavkunov.vcs;
 
+import ru.spbau.shavkunov.vcs.exceptions.CannotDeleteCurrentBranchException;
 import ru.spbau.shavkunov.vcs.exceptions.NoBranchExistsException;
 import ru.spbau.shavkunov.vcs.exceptions.NotRegularFileException;
 
@@ -190,6 +191,20 @@ public class VcsManager {
             Path treeDirectory = root.resolve(subTree.getPrefix());
             Files.createDirectory(treeDirectory);
             restoreTree(subTree, treeDirectory);
+        }
+    }
+
+    public void deleteBranch(String branchName) throws NoBranchExistsException, IOException, CannotDeleteCurrentBranchException {
+        if (repository.isBranchExists(branchName)) {
+            String head = repository.getCurrentHead();
+            String currentBranch = head.substring(REFERENCE_PREFIX.length());
+            if (currentBranch.equals(branchName)) {
+                throw new CannotDeleteCurrentBranchException();
+            }
+
+            repository.deleteBranch(branchName);
+        } else {
+            throw new NoBranchExistsException();
         }
     }
 }

@@ -2,12 +2,15 @@ package ru.spbau.shavkunov.vcs;
 
 import ru.spbau.shavkunov.vcs.exceptions.BranchAlreadyExistsException;
 import ru.spbau.shavkunov.vcs.exceptions.NoBranchExistsException;
+import ru.spbau.shavkunov.vcs.exceptions.NoRepositoryException;
 import ru.spbau.shavkunov.vcs.exceptions.NotRegularFileException;
 
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Objects;
+
+import static ru.spbau.shavkunov.vcs.Constants.REFERENCE_PREFIX;
 
 // TODO : handle exceptions
 // TODO : sha in head
@@ -25,6 +28,7 @@ public class Main {
                          "checkout <name of existing branch> \n" +
                          "log";
         System.out.println(message);
+
     }
 
     public static void main(String[] args) {
@@ -118,6 +122,7 @@ public class Main {
             case "checkout": {
                 if (args.length < 2) {
                     printHelp("Too few arguments");
+                    return;
                 }
 
                 try {
@@ -148,7 +153,34 @@ public class Main {
 
             case "branch": {
                 if (args.length == 1) {
+                    try {
+                        Repository repository = Repository.getRepository(rootPath);
+                        String currentHead = repository.getCurrentHead();
+                        if (currentHead.startsWith(REFERENCE_PREFIX)) {
+                            System.out.println("Current branch name : " + currentHead.substring(REFERENCE_PREFIX.length()));
+                        } else {
+                            System.out.println("Current hash of commit : " + currentHead);
+                        }
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    } catch (NoRepositoryException e) {
+                        e.printStackTrace();
+                    }
+                } else {
+                    if (args.length < 4) {
+                        printHelp("Too few arguments");
+                        return;
+                    }
 
+                    try {
+                        String branchName = args[4];
+                        Repository repository = Repository.getRepository(rootPath);
+                        repository.deleteBranch(branchName);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    } catch (NoRepositoryException e) {
+                        e.printStackTrace();
+                    }
                 }
             }
 
