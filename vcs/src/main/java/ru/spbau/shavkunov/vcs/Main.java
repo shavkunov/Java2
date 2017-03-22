@@ -1,6 +1,7 @@
 package ru.spbau.shavkunov.vcs;
 
 import ru.spbau.shavkunov.vcs.exceptions.BranchAlreadyExistsException;
+import ru.spbau.shavkunov.vcs.exceptions.NoBranchExistsException;
 import ru.spbau.shavkunov.vcs.exceptions.NotRegularFileException;
 
 import java.io.IOException;
@@ -108,6 +109,8 @@ public class Main {
                     e.printStackTrace();
                 } catch (NotRegularFileException e) {
                     e.printStackTrace();
+                } catch (Exception e) {
+                    e.printStackTrace();
                 }
                 break;
             }
@@ -136,6 +139,16 @@ public class Main {
                     e.printStackTrace();
                 } catch (BranchAlreadyExistsException e) {
                     e.printStackTrace();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                } catch (NoBranchExistsException e) {
+                    e.printStackTrace();
+                }
+            }
+
+            case "branch": {
+                if (args.length == 1) {
+
                 }
             }
 

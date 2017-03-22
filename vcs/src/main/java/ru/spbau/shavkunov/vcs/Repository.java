@@ -73,7 +73,6 @@ public class Repository {
             return head.substring(REFERENCE_PREFIX.length());
         }
 
-        // если в head лежит хеш коммита, то как узнать ветку и нужно ли?
         return null;
     }
 

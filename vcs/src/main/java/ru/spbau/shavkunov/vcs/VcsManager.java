@@ -149,6 +149,8 @@ public class VcsManager {
             cleanAll();
             restoreCommit(revision);
         }
+
+        repository.writeHead(revision);
     }
 
     /**
