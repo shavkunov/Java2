@@ -52,6 +52,18 @@ public class Commit extends VcsObjectWithHash {
         Files.write(repository.getObjectsPath().resolve(hash), content);
     }
 
+    public Date getDate() {
+        return date;
+    }
+
+    public String getAuthor() {
+        return author;
+    }
+
+    public String getMessage() {
+        return message;
+    }
+
     public String getTreeHash() {
         return treeHash;
     }

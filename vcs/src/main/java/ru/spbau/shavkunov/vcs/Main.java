@@ -187,7 +187,14 @@ public class Main {
             }
 
             case "log": {
-
+                try {
+                    VcsManager manager = new VcsManager(rootPath);
+                    manager.getLog().printLog();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
             }
 
             case "help": {

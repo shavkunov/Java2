@@ -11,10 +11,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 import static ru.spbau.shavkunov.vcs.Constants.REFERENCE_PREFIX;
 import static ru.spbau.shavkunov.vcs.Constants.VCS_FOLDER;
@@ -238,6 +235,44 @@ public class VcsManager {
             repository.deleteBranch(branchName);
         } else {
             throw new NoBranchExistsException();
+        }
+    }
+
+    /**
+     * Получение лога.
+     * @return класс, знающий как выводить сообщения о коммитах.
+     * @throws Exception TODO
+     */
+    public VcsLog getLog() throws Exception {
+        Reference reference = new Reference(repository);
+        String currentCommitHash = reference.getCommitHash();
+        Commit currentCommit = new Commit(currentCommitHash, repository);
+
+        HashSet<String> commitHashes = new HashSet<>();
+        commitHashes.add(currentCommitHash);
+        ArrayList<Commit> commits = new ArrayList<>();
+        commits.add(currentCommit);
+
+        dfs(commits, commitHashes, currentCommit);
+        return new VcsLog(commits);
+    }
+
+    /**
+     * Обход дерева коммитов, породивших конкретный.
+     * @param commits общий список, куда складываются неповторяющиеся коммиты.
+     * @param commitHashes список хешей добавленных коммитов.
+     * @param currentCommit предков этого коммита обходит dfs.
+     * @throws IOException TODO
+     * @throws ClassNotFoundException TODO
+     */
+    private void dfs(ArrayList<Commit> commits, HashSet<String> commitHashes, Commit currentCommit)
+                     throws IOException, ClassNotFoundException {
+        for (String commitHash : currentCommit.getParentCommits()) {
+            if (!commitHashes.contains(commitHash)) {
+                Commit parentCommit = new Commit(commitHash, repository);
+                commits.add(parentCommit);
+                dfs(commits, commitHashes, parentCommit);
+            }
         }
     }
 }

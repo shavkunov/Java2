@@ -6,6 +6,7 @@ import java.nio.file.Path;
 import java.util.Arrays;
 
 import static ru.spbau.shavkunov.vcs.Constants.REFERENCES_FOLDER;
+import static ru.spbau.shavkunov.vcs.Constants.REFERENCE_PREFIX;
 
 /**
  * Класс, отвечающий за представление объекта reference(ссылка) в системе контроля версий.
@@ -28,12 +29,14 @@ public class Reference implements VcsObject {
     }
 
     public Reference(Repository repository) throws Exception {
-        name = repository.getCurrentBranchName();
-        if (name == null) {
-            throw new Exception("hash commit instead of branch name");
+        String head = repository.getCurrentHead();
+        if (head.startsWith(REFERENCE_PREFIX)) {
+            name = head.substring(REFERENCE_PREFIX.length());
+            commitHash = Arrays.toString(Files.readAllBytes(repository.getReferencesPath().resolve(name)));
+        } else {
+            name = "Commit hash";
+            commitHash = head;
         }
-
-        commitHash = Arrays.toString(Files.readAllBytes(repository.getReferencesPath().resolve(name)));
     }
 
     public Reference(String name, Repository repository) throws IOException {

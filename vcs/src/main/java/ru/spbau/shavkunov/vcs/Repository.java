@@ -67,15 +67,6 @@ public class Repository {
         return reader.readLine();
     }
 
-    public String getCurrentBranchName() throws IOException {
-        String head = getCurrentHead();
-        if (head.startsWith(REFERENCE_PREFIX)) {
-            return head.substring(REFERENCE_PREFIX.length());
-        }
-
-        return null;
-    }
-
     public void writeHead(String revision) throws IOException {
         if (getReferencesPath().resolve(revision).toFile().exists()) {
             Files.write(getHead(), (REFERENCE_PREFIX + revision).getBytes());
