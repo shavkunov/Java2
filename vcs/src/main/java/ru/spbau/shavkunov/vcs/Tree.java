@@ -2,35 +2,58 @@ package ru.spbau.shavkunov.vcs;
 
 import org.apache.commons.codec.digest.DigestUtils;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.ObjectOutputStream;
+import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Set;
-import java.util.TreeSet;
-import java.util.stream.Collectors;
+import java.util.HashSet;
 
 import static ru.spbau.shavkunov.vcs.Constants.OBJECTS_FOLDER;
 
 public class Tree extends VcsObjectWithHash {
-    private Set<ObjectWithName<Blob>> blobFiles;
-    private Set<Tree> treeFiles;
+    private HashSet<ObjectWithName<Blob>> blobFiles;
+    private HashSet<Tree> treeFiles;
 
-    public Tree(Set<ObjectWithName<Blob>> blobFiles, Set<Tree> treeFiles, Repository repository)
+    public String getPrefix() {
+        return prefix;
+    }
+
+    private String prefix;
+
+    public Tree(HashSet<ObjectWithName<Blob>> blobFiles, HashSet<Tree> treeFiles, Repository repository, Path prefix)
                 throws IOException {
         this.blobFiles = blobFiles;
         this.treeFiles = treeFiles;
+        this.prefix = prefix.toString();
 
         byte[] content = getContent();
         hash = DigestUtils.sha1Hex(content);
         Files.write(repository.getObjectsPath().resolve(hash), content);
     }
 
-    public Tree() {
-        blobFiles = new TreeSet<>();
-        treeFiles = new TreeSet<>();
+    public Tree(Path prefix) {
+        blobFiles = new HashSet<>();
+        treeFiles = new HashSet<>();
+        this.prefix = prefix.toString();
+    }
+
+    public Tree(String treeHash, Repository repository) throws IOException, ClassNotFoundException {
+        byte[] content = Files.readAllBytes(repository.getObjectsPath().resolve(treeHash));
+
+        try (ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(content);
+             ObjectInputStream input = new ObjectInputStream(byteArrayInputStream)) {
+
+            blobFiles = (HashSet<ObjectWithName<Blob>>) input.readObject();
+            treeFiles = (HashSet<Tree>) input.readObject();
+            prefix = (String) input.readObject();
+        }
+    }
+
+    public HashSet<ObjectWithName<Blob>> getBlobFiles() {
+        return blobFiles;
+    }
+
+    public HashSet<Tree> getTreeFiles() {
+        return treeFiles;
     }
 
     private byte[] getContent() throws IOException {
@@ -38,10 +61,9 @@ public class Tree extends VcsObjectWithHash {
         try (ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
              ObjectOutputStream output = new ObjectOutputStream(byteArrayOutputStream)) {
 
-            output.writeObject(new ArrayList<>(blobFiles.stream()
-                                                        .map(ObjectWithName::getName)
-                                                        .collect(Collectors.toList())));
+            output.writeObject(blobFiles);
             output.writeObject(treeFiles);
+            output.writeObject(prefix);
             output.flush();
             content = byteArrayOutputStream.toByteArray();
         }

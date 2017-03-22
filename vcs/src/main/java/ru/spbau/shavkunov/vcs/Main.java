@@ -1,11 +1,15 @@
 package ru.spbau.shavkunov.vcs;
 
+import ru.spbau.shavkunov.vcs.exceptions.BranchAlreadyExistsException;
+import ru.spbau.shavkunov.vcs.exceptions.NotRegularFileException;
+
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Objects;
 
 // TODO : handle exceptions
+// TODO : sha in head
 public class Main {
     private static void printHelp(String additionalMessage) {
         if (!additionalMessage.equals("")) {
@@ -116,13 +120,21 @@ public class Main {
                 try {
                     VcsManager manager = new VcsManager(rootPath);
                     if (Objects.equals(args[2], "-b")) {
+                        if (args.length < 3) {
+                            printHelp("Name of branch not specified");
+                            return;
+                        }
+
                         String branchName = args[3];
-                        //manager.checkoutToNewBranch(branchName);
+                        manager.checkoutToNewBranch(branchName);
                     } else {
-                        //manager.checkoutToExistingBranch(branchName);
+                        String revision = args[2];
+                        manager.checkout(revision);
                     }
 
                 } catch (IOException e) {
+                    e.printStackTrace();
+                } catch (BranchAlreadyExistsException e) {
                     e.printStackTrace();
                 }
             }

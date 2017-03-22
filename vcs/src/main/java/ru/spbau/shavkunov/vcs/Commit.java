@@ -2,9 +2,7 @@ package ru.spbau.shavkunov.vcs;
 
 import org.apache.commons.codec.digest.DigestUtils;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.ObjectOutputStream;
+import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Date;
@@ -17,6 +15,7 @@ public class Commit extends VcsObjectWithHash {
     private String author;
     private String message;
     private String treeHash;
+    private List<String> parentCommits;
 
     public Commit(String author, String message, String treeHash, List<String> parentCommits, Repository repository)
                  throws IOException {
@@ -24,13 +23,32 @@ public class Commit extends VcsObjectWithHash {
         this.author = author;
         this.message = message;
         this.treeHash = treeHash;
+        this.parentCommits = parentCommits;
 
-        byte[] content = getContent(parentCommits);
+        byte[] content = getContent();
         hash = DigestUtils.sha1Hex(content);
         Files.write(repository.getObjectsPath().resolve(hash), content);
     }
 
-    private byte[] getContent(List<String> parentCommits) throws IOException {
+    public String getTreeHash() {
+        return treeHash;
+    }
+
+    public Commit(String commitHash, Repository repository) throws IOException, ClassNotFoundException {
+        byte[] content = Files.readAllBytes(repository.getObjectsPath().resolve(commitHash));
+
+        try (ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(content);
+             ObjectInputStream input = new ObjectInputStream(byteArrayInputStream)) {
+
+            date = (Date) input.readObject();
+            author = (String) input.readObject();
+            message = (String) input.readObject();
+            treeHash = (String) input.readObject();
+            parentCommits = (List<String>) input.readObject();
+        }
+    }
+
+    private byte[] getContent() throws IOException {
         byte[] res;
         try (ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
              ObjectOutputStream output = new ObjectOutputStream(byteArrayOutputStream)) {
@@ -39,8 +57,6 @@ public class Commit extends VcsObjectWithHash {
             output.writeObject(author);
             output.writeObject(message);
             output.writeObject(treeHash);
-
-            output.writeObject(parentCommits);
             output.writeObject(parentCommits);
 
             output.flush();
@@ -48,6 +64,10 @@ public class Commit extends VcsObjectWithHash {
         }
 
         return res;
+    }
+
+    public List<String> getParentCommits() {
+        return parentCommits;
     }
 
     @Override

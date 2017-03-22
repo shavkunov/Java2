@@ -1,7 +1,9 @@
 package ru.spbau.shavkunov.vcs;
 
-import java.io.FileOutputStream;
-import java.io.IOException;
+import ru.spbau.shavkunov.vcs.exceptions.BranchAlreadyExistsException;
+import ru.spbau.shavkunov.vcs.exceptions.NoRepositoryException;
+
+import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.NotDirectoryException;
 import java.nio.file.Path;
@@ -39,7 +41,7 @@ public class Repository {
         Path pathToHead = rootDir.resolve(HEAD);
         Files.createFile(pathToHead);
         FileOutputStream fileOutputStream = new FileOutputStream(pathToHead.toFile());
-        fileOutputStream.write(DEFAULT_BRANCH_NAME.getBytes());
+        fileOutputStream.write((REFERENCE_PREFIX + DEFAULT_BRANCH_NAME).getBytes());
         fileOutputStream.flush();
         fileOutputStream.close();
     }
@@ -52,8 +54,35 @@ public class Repository {
         return rootDirectory.resolve(OBJECTS_FOLDER);
     }
 
-    public Path getCurrentBranchName() {
+    public Path getReferencesPath() {
         return rootDirectory.resolve(REFERENCES_FOLDER);
+    }
+
+    private Path getHead() {
+        return rootDirectory.resolve(HEAD);
+    }
+
+    public String getCurrentHead() throws IOException {
+        BufferedReader reader = new BufferedReader(new FileReader(getHead().toFile()));
+        return reader.readLine();
+    }
+
+    public String getCurrentBranchName() throws IOException {
+        String head = getCurrentHead();
+        if (head.startsWith(REFERENCE_PREFIX)) {
+            return head.substring(REFERENCE_PREFIX.length());
+        }
+
+        // если в head лежит хеш коммита, то как узнать ветку и нужно ли?
+        return null;
+    }
+
+    public void writeHead(String revision) throws IOException {
+        if (getReferencesPath().resolve(revision).toFile().exists()) {
+            Files.write(getHead(), (REFERENCE_PREFIX + revision).getBytes());
+        } else {
+            Files.write(getHead(), revision.getBytes());
+        }
     }
 
     public static Repository getRepository(Path path) throws IOException, NoRepositoryException {
@@ -71,5 +100,20 @@ public class Repository {
 
     public Repository(Path rootDirectory) throws IOException {
         this.rootDirectory = rootDirectory;
+    }
+
+    public void createNewBranch(String branchName, String commitHash) throws BranchAlreadyExistsException, IOException {
+        if (isBranchExists(branchName)) {
+            throw new BranchAlreadyExistsException();
+        }
+
+        Path branchPath = getReferencesPath().resolve(branchName);
+        Files.write(branchPath, commitHash.getBytes());
+        Files.write(getHead(), (REFERENCE_PREFIX + branchName).getBytes());
+    }
+
+    public boolean isBranchExists(String branchName) {
+        Path branchPath = getReferencesPath().resolve(branchName);
+        return branchPath.toFile().exists();
     }
 }

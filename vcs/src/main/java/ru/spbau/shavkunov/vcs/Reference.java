@@ -16,10 +16,18 @@ public class Reference implements VcsObject {
         return repository.getRootDirectory().resolve(REFERENCES_FOLDER).resolve(name);
     }
 
-    public Reference(Repository repository) throws IOException {
-        Path pathToRef = repository.getCurrentBranchName();
-        name = pathToRef.toFile().listFiles()[0].getName();
-        commitHash = Arrays.toString(Files.readAllBytes(pathToRef));
+    public Reference(Repository repository) throws Exception {
+        name = repository.getCurrentBranchName();
+        if (name == null) {
+            throw new Exception("hash commit instead of branch name");
+        }
+
+        commitHash = Arrays.toString(Files.readAllBytes(repository.getReferencesPath().resolve(name)));
+    }
+
+    public Reference(String name, Repository repository) throws IOException {
+        this.name = name;
+        commitHash = Arrays.toString(Files.readAllBytes(repository.getReferencesPath().resolve(name)));
     }
 
     public String getName() {
