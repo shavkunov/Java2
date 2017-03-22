@@ -19,11 +19,17 @@ import java.util.Map;
 import static ru.spbau.shavkunov.vcs.Constants.REFERENCE_PREFIX;
 import static ru.spbau.shavkunov.vcs.Constants.VCS_FOLDER;
 
-// TODO : normalize paths
+/**
+ * Класс отвечающий за логику взаимодействия между пользователем и репозиторием.
+ */
 public class VcsManager {
     private Repository repository;
     private Map<Path, String> index;
 
+    /**
+     * Чтение файла index, отвечающий за состояние репозитория.
+     * @throws IOException TODO
+     */
     private void readIndex() throws IOException {
         index = new HashMap<>();
         BufferedReader reader = new BufferedReader(new FileReader(repository.getIndexPath().toFile()));
@@ -54,6 +60,11 @@ public class VcsManager {
         index.remove(pathToFile);
     }
 
+    /**
+     * Реализация команды remove. Удаление файла из репозитория.
+     * @param pathToFile путь к удаляемому файлу.
+     * @throws NotRegularFileException исключение, если путь оказался не к файлу.
+     */
     public void removeFile(Path pathToFile) throws NotRegularFileException {
         if (Files.isDirectory(pathToFile)) {
             throw new NotRegularFileException();
@@ -62,6 +73,12 @@ public class VcsManager {
         removeFileFromIndex(pathToFile);
     }
 
+    /**
+     * Реализация команды add репозитория.
+     * @param pathToFile путь к файлу, который нужно добавить.
+     * @throws NotRegularFileException исключение, если путь оказался не к файлу.
+     * @throws IOException TODO
+     */
     public void addFile(Path pathToFile) throws NotRegularFileException, IOException {
         if (Files.isDirectory(pathToFile)) {
             throw new NotRegularFileException();
@@ -72,6 +89,12 @@ public class VcsManager {
         addFileToIndex(pathToFile, hash);
     }
 
+    /**
+     * Создание дерева структуры файлов и папок репозитория.
+     * @return дерево с структурой папок.
+     * @throws IOException TODO
+     * @throws NotRegularFileException TODO
+     */
     private Tree createTreeFromIndex() throws IOException, NotRegularFileException {
         HashMap<Path, Tree> trees = new HashMap<>();
         Path rootPath = Paths.get("");
@@ -102,8 +125,8 @@ public class VcsManager {
      * Реализация команды commit.
      * @param author автор коммита
      * @param message сообщение при коммите
-     * @throws Exception
-     * @throws NotRegularFileException
+     * @throws Exception TODO
+     * @throws NotRegularFileException TODO
      */
     public void commitChanges(String author, String message) throws Exception, NotRegularFileException {
         Tree tree = createTreeFromIndex();
@@ -111,12 +134,13 @@ public class VcsManager {
         ArrayList<String> parentCommits = new ArrayList<>(Collections.singletonList(ref.getCommitHash()));
         Commit commit = new Commit(author, message, tree.getHash(), parentCommits, repository);
         ref.refreshCommitHash(commit.getHash(), repository);
+        // TODO : update index
     }
 
     /**
      * Реалиация команды checkout, когда нужно создать новую ветку.
      * @param newBranchName имя новой ветки
-     * @throws Exception что-то пошло не так
+     * @throws Exception TODO
      */
     public void checkoutToNewBranch(String newBranchName) throws Exception {
         String currentHead = repository.getCurrentHead();
@@ -132,7 +156,7 @@ public class VcsManager {
     /**
      * Реализация команды checkout системы контроля версий.
      * @param revision название ветки или хеш коммита
-     * @throws Exception что-то пошло не так TODO
+     * @throws Exception TODO
      * @throws NoBranchExistsException не существует ветки, на которую нужно переключиться
      */
     public void checkout(String revision) throws Exception, NoBranchExistsException {
@@ -152,6 +176,7 @@ public class VcsManager {
         }
 
         repository.writeHead(revision);
+        // TODO change index
     }
 
     /**
@@ -194,6 +219,14 @@ public class VcsManager {
         }
     }
 
+    /**
+     * Удаление ветки в репозитории.
+     * @param branchName имя ветки, которую нужно удалить.
+     * @throws NoBranchExistsException исключение, если не существует удаляемой ветки.
+     * @throws IOException TODO
+     * @throws CannotDeleteCurrentBranchException исключение, если пользователь хочет удалить ветку, на которой
+     * он находится в данный моментъ
+     */
     public void deleteBranch(String branchName) throws NoBranchExistsException, IOException, CannotDeleteCurrentBranchException {
         if (repository.isBranchExists(branchName)) {
             String head = repository.getCurrentHead();

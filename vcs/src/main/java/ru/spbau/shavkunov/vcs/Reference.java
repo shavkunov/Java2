@@ -7,9 +7,20 @@ import java.util.Arrays;
 
 import static ru.spbau.shavkunov.vcs.Constants.REFERENCES_FOLDER;
 
+/**
+ * Класс, отвечающий за представление объекта reference(ссылка) в системе контроля версий.
+ * Ссылка указывает на текущую ветку и хеш коммита, отвечающий за текущее состояние репозитория.
+ */
 public class Reference implements VcsObject {
-    private String name; // название файла в refs
-    private String commitHash; // содержимое этого файла
+    /**
+     * Название файла в папке refs
+     */
+    private String name;
+
+    /**
+     * Содержимое файла в папке refs.
+     */
+    private String commitHash;
 
     @Override
     public Path getPathToObject(Repository repository) {

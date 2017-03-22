@@ -1,5 +1,8 @@
 package ru.spbau.shavkunov.vcs;
 
+/**
+ * Набор констант, необходимых для работы с репозиторием.
+ */
 public class Constants {
     public static final String OBJECTS_FOLDER = "objects";
     public static final String REFERENCES_FOLDER = "references";

@@ -9,15 +9,28 @@ import java.util.HashSet;
 
 import static ru.spbau.shavkunov.vcs.Constants.OBJECTS_FOLDER;
 
+/**
+ * Класс, отвечающий за представление структуры папок и файлов в репозитории.
+ */
 public class Tree extends VcsObjectWithHash {
+    /**
+     * Список файлов с их именами(т.е. с путями к этим файлам) на текущем уровне.
+     */
     private HashSet<ObjectWithName<Blob>> blobFiles;
+
+    /**
+     * Список деревьев, располженных уровнями ниже.
+     */
     private HashSet<Tree> treeFiles;
+
+    /**
+     * Название папки, в которой находится текущее дерево.
+     */
+    private String prefix;
 
     public String getPrefix() {
         return prefix;
     }
-
-    private String prefix;
 
     public Tree(HashSet<ObjectWithName<Blob>> blobFiles, HashSet<Tree> treeFiles, Repository repository, Path prefix)
                 throws IOException {

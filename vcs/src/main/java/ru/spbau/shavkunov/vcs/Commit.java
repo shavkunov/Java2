@@ -10,11 +10,33 @@ import java.util.List;
 
 import static ru.spbau.shavkunov.vcs.Constants.OBJECTS_FOLDER;
 
+/**
+ * Реализация класс, который представляет собой некоторое состояние репозитория.
+ */
 public class Commit extends VcsObjectWithHash {
+    /**
+     * Дата сделанного коммита.
+     */
     private Date date;
+
+    /**
+     * Автор коммита.
+     */
     private String author;
+
+    /**
+     * Сообщение коммита.
+     */
     private String message;
+
+    /**
+     * Хеш дерева, которое хранит в себе структуру файлов и папок.
+     */
     private String treeHash;
+
+    /**
+     * Список хешей коммитов, порождающих данный.
+     */
     private List<String> parentCommits;
 
     public Commit(String author, String message, String treeHash, List<String> parentCommits, Repository repository)

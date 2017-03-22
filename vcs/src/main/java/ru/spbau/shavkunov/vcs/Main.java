@@ -13,8 +13,10 @@ import java.util.Objects;
 import static ru.spbau.shavkunov.vcs.Constants.REFERENCE_PREFIX;
 
 // TODO : handle exceptions
-// TODO : sha in head
 public class Main {
+    /**
+     * Вывод usage пользователю.
+     */
     private static void printHelp(String additionalMessage) {
         if (!additionalMessage.equals("")) {
             System.out.println(additionalMessage);
@@ -185,7 +187,7 @@ public class Main {
             }
 
             case "log": {
-                // TODO
+
             }
 
             case "help": {
@@ -194,7 +196,7 @@ public class Main {
             }
 
             default: {
-                printHelp("Unknown argument");
+                printHelp("Unknown command");
                 break;
             }
         }

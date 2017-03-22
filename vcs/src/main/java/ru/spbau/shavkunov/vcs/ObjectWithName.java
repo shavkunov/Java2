@@ -1,5 +1,9 @@
 package ru.spbau.shavkunov.vcs;
 
+/**
+ * Обертка над объектов, добавляемая ему имя.
+ * @param <T> тип объекта, к которому приписываем имя.
+ */
 public class ObjectWithName<T> implements Comparable<ObjectWithName<?>> {
     private T object;
     private String name;
