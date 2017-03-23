@@ -1,5 +1,6 @@
 package ru.spbau.shavkunov.vcs;
 
+import org.jetbrains.annotations.NotNull;
 import ru.spbau.shavkunov.vcs.exceptions.BranchAlreadyExistsException;
 import ru.spbau.shavkunov.vcs.exceptions.NoRepositoryException;
 
@@ -17,9 +18,9 @@ public class Repository {
     /**
      * Корневая директория, где расположен репозиторий.
      */
-    private Path rootDirectory;
+    private @NotNull Path rootDirectory;
 
-    public Path getRootDirectory() {
+    public @NotNull Path getRootDirectory() {
         return rootDirectory;
     }
 
@@ -29,7 +30,7 @@ public class Repository {
      * @throws IOException исключения, могут возникнуть в случае если невозможно создать папку
      * или переданный путь это не папка.
      */
-    public static void initRepository(Path path) throws IOException {
+    public static void initRepository(@NotNull Path path) throws IOException {
         if (!Files.isDirectory(path)) {
             throw new NotDirectoryException(path.toString());
         }
@@ -54,7 +55,7 @@ public class Repository {
      * Получение ссылки на файл index.
      * @return путь к файлу index.
      */
-    public Path getIndexPath() {
+    public @NotNull Path getIndexPath() {
         return rootDirectory.resolve(VCS_FOLDER).resolve(INDEX_FILE);
     }
 
@@ -62,7 +63,7 @@ public class Repository {
      * Получение ссылки на папку, где хранятся все объекты.
      * @return путь к папке объектов.
      */
-    public Path getObjectsPath() {
+    public @NotNull Path getObjectsPath() {
         return rootDirectory.resolve(VCS_FOLDER).resolve(OBJECTS_FOLDER);
     }
 
@@ -70,7 +71,7 @@ public class Repository {
      * Получение ссылки на папку, где хранятся все ветки.
      * @return путь к папке ссылок.
      */
-    public Path getReferencesPath() {
+    public @NotNull Path getReferencesPath() {
         return rootDirectory.resolve(VCS_FOLDER).resolve(REFERENCES_FOLDER);
     }
 
@@ -78,7 +79,7 @@ public class Repository {
      * Получение ссылки на head файл.
      * @return путь к файлу head.
      */
-    private Path getHead() {
+    private @NotNull Path getHead() {
         return rootDirectory.resolve(VCS_FOLDER).resolve(HEAD);
     }
 
@@ -87,7 +88,7 @@ public class Repository {
      * @return содержимое файла head.
      * @throws IOException исключение, если возникли проблемы с чтением файла.
      */
-    public String getCurrentHead() throws IOException {
+    public @NotNull String getCurrentHead() throws IOException {
         BufferedReader reader = new BufferedReader(new FileReader(getHead().toFile()));
         return reader.readLine();
     }
@@ -97,7 +98,7 @@ public class Repository {
      * @param revision имя ветки или хеш коммита.
      * @throws IOException исключение, если возникли проблемы с чтением файла.
      */
-    public void writeHead(String revision) throws IOException {
+    public void writeHead(@NotNull String revision) throws IOException {
         if (getReferencesPath().resolve(revision).toFile().exists()) {
             Files.write(getHead(), (REFERENCE_PREFIX + revision).getBytes());
         } else {
@@ -112,7 +113,7 @@ public class Repository {
      * @throws IOException исключение, если возникли проблемы с чтением файла или файл не оказался директорией.
      * @throws NoRepositoryException исключение, если по данному пути нет репозитория.
      */
-    public static Repository getRepository(Path path) throws IOException, NoRepositoryException {
+    public static Repository getRepository(@NotNull Path path) throws IOException, NoRepositoryException {
         if (!Files.isDirectory(path)) {
             throw new NotDirectoryException(path.toString());
         }
@@ -125,7 +126,7 @@ public class Repository {
         return new Repository(path);
     }
 
-    public Repository(Path rootDirectory) {
+    public Repository(@NotNull Path rootDirectory) {
         this.rootDirectory = rootDirectory;
     }
 
@@ -134,7 +135,7 @@ public class Repository {
      * @param branchName ветку с этим именем требуется удалить.
      * @throws IOException исключение, если возникли проблемы с чтением файла.
      */
-    public void deleteBranch(String branchName) throws IOException {
+    public void deleteBranch(@NotNull String branchName) throws IOException {
         Files.delete(getReferencesPath().resolve(branchName));
     }
 
@@ -145,7 +146,8 @@ public class Repository {
      * @throws BranchAlreadyExistsException ветка на самом деле уже была создана.
      * @throws IOException исключение, если возникли проблемы с чтением файла.
      */
-    public void createNewBranch(String branchName, String commitHash) throws BranchAlreadyExistsException, IOException {
+    public void createNewBranch(@NotNull String branchName, @NotNull String commitHash)
+                                throws BranchAlreadyExistsException, IOException {
         if (isBranchExists(branchName)) {
             throw new BranchAlreadyExistsException();
         }
@@ -160,7 +162,7 @@ public class Repository {
      * @param branchName имя проверяемой ветки.
      * @return true, если ветка с данным именем существует, false иначе.
      */
-    public boolean isBranchExists(String branchName) {
+    public boolean isBranchExists(@NotNull String branchName) {
         Path branchPath = getReferencesPath().resolve(branchName);
         return branchPath.toFile().exists();
     }

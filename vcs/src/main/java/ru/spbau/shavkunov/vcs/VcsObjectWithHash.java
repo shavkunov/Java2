@@ -1,5 +1,7 @@
 package ru.spbau.shavkunov.vcs;
 
+import org.jetbrains.annotations.NotNull;
+
 /**
  * Класс, описывающий логику взаимодействия с хешом объекта, если такой у него присутствует.
  */
@@ -7,9 +9,9 @@ public abstract class VcsObjectWithHash implements VcsObject {
     /**
      * Хеш объекта.
      */
-    protected String hash;
+    protected @NotNull String hash;
 
-    public String getHash() {
+    public @NotNull String getHash() {
         return hash;
     }
 }

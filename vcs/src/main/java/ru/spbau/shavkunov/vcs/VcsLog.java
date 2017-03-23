@@ -1,5 +1,7 @@
 package ru.spbau.shavkunov.vcs;
 
+import org.jetbrains.annotations.NotNull;
+
 import java.util.ArrayList;
 import java.util.Comparator;
 
@@ -10,9 +12,9 @@ public class VcsLog {
     /**
      * Список коммитов, сообщение о которых нужно вывести.
      */
-    private ArrayList<Commit> commits;
+    private @NotNull ArrayList<Commit> commits;
 
-    public VcsLog(ArrayList<Commit> commits) {
+    public VcsLog(@NotNull ArrayList<Commit> commits) {
         commits.sort(Comparator.comparing(Commit::getDate));
         this.commits = commits;
     }
@@ -30,7 +32,7 @@ public class VcsLog {
      * Печать сообщения данного коммита.
      * @param commit сообщение этого коммита нужно распечатать.
      */
-    private void printCommitLog(Commit commit) {
+    private void printCommitLog(@NotNull Commit commit) {
         String message = "Date : " + commit.getDate().toString() + "\n" +
                          "Author : " + commit.getAuthor() + "\n" +
                          "Commit message : " + commit.getMessage() + "\n" +

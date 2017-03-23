@@ -1,10 +1,12 @@
 package ru.spbau.shavkunov.vcs;
 
 import org.apache.commons.codec.digest.DigestUtils;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
@@ -17,29 +19,30 @@ public class Commit extends VcsObjectWithHash {
     /**
      * Дата сделанного коммита.
      */
-    private Date date;
+    private @NotNull Date date;
 
     /**
      * Автор коммита.
      */
-    private String author;
+    private @NotNull String author;
 
     /**
      * Сообщение коммита.
      */
-    private String message;
+    private @NotNull String message;
 
     /**
      * Хеш дерева, которое хранит в себе структуру файлов и папок.
      */
-    private String treeHash;
+    private @NotNull String treeHash;
 
     /**
      * Список хешей коммитов, порождающих данный.
      */
-    private List<String> parentCommits;
+    private @NotNull ArrayList<String> parentCommits;
 
-    public Commit(String author, String message, String treeHash, List<String> parentCommits, Repository repository)
+    public Commit(@NotNull String author, @NotNull String message, @NotNull String treeHash,
+                  @NotNull ArrayList<String> parentCommits, @NotNull Repository repository)
                  throws IOException {
         this.date = new Date();
         this.author = author;
@@ -52,23 +55,23 @@ public class Commit extends VcsObjectWithHash {
         Files.write(repository.getObjectsPath().resolve(hash), content);
     }
 
-    public Date getDate() {
+    public @NotNull Date getDate() {
         return date;
     }
 
-    public String getAuthor() {
+    public @NotNull String getAuthor() {
         return author;
     }
 
-    public String getMessage() {
+    public @NotNull String getMessage() {
         return message;
     }
 
-    public String getTreeHash() {
+    public @NotNull String getTreeHash() {
         return treeHash;
     }
 
-    public Commit(String commitHash, Repository repository) throws IOException, ClassNotFoundException {
+    public Commit(@NotNull String commitHash, @NotNull Repository repository) throws IOException, ClassNotFoundException {
         byte[] content = Files.readAllBytes(repository.getObjectsPath().resolve(commitHash));
 
         try (ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(content);
@@ -78,11 +81,11 @@ public class Commit extends VcsObjectWithHash {
             author = (String) input.readObject();
             message = (String) input.readObject();
             treeHash = (String) input.readObject();
-            parentCommits = (List<String>) input.readObject();
+            parentCommits = (ArrayList<String>) input.readObject();
         }
     }
 
-    private byte[] getContent() throws IOException {
+    private @NotNull byte[] getContent() throws IOException {
         byte[] res;
         try (ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
              ObjectOutputStream output = new ObjectOutputStream(byteArrayOutputStream)) {
@@ -100,12 +103,12 @@ public class Commit extends VcsObjectWithHash {
         return res;
     }
 
-    public List<String> getParentCommits() {
+    public @NotNull List<String> getParentCommits() {
         return parentCommits;
     }
 
     @Override
-    public Path getPathToObject(Repository repository) {
+    public @NotNull Path getPathToObject(@NotNull Repository repository) {
         return repository.getRootDirectory().resolve(OBJECTS_FOLDER).resolve(hash);
     }
 }

@@ -1,5 +1,7 @@
 package ru.spbau.shavkunov.vcs;
 
+import org.jetbrains.annotations.NotNull;
+
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -17,15 +19,15 @@ public class Reference implements VcsObject {
     /**
      * Название файла в папке refs
      */
-    private String name;
+    private @NotNull String name;
 
     /**
      * Содержимое файла в папке refs.
      */
-    private String commitHash;
+    private @NotNull String commitHash;
 
     @Override
-    public Path getPathToObject(Repository repository) {
+    public @NotNull Path getPathToObject(@NotNull Repository repository) {
         return repository.getRootDirectory().resolve(VCS_FOLDER).resolve(REFERENCES_FOLDER).resolve(name);
     }
 
@@ -35,7 +37,7 @@ public class Reference implements VcsObject {
      * @param repository репозиторий, где создается ссылка.
      * @throws IOException исключение, если возникли проблемы с чтением файла.
      */
-    public Reference(Repository repository) throws IOException {
+    public Reference(@NotNull Repository repository) throws IOException {
         String head = repository.getCurrentHead();
         if (head.startsWith(REFERENCE_PREFIX)) {
             name = head.substring(REFERENCE_PREFIX.length());
@@ -52,16 +54,12 @@ public class Reference implements VcsObject {
      * @param repository репозиторий, где создается ссылка.
      * @throws IOException исключение, если возникли проблемы с чтением файла.
      */
-    public Reference(String name, Repository repository) throws IOException {
+    public Reference(@NotNull String name, @NotNull Repository repository) throws IOException {
         this.name = name;
         commitHash = Arrays.toString(Files.readAllBytes(repository.getReferencesPath().resolve(name)));
     }
 
-    public String getName() {
-        return name;
-    }
-
-    public String getCommitHash() {
+    public @NotNull String getCommitHash() {
         return commitHash;
     }
 
@@ -71,7 +69,7 @@ public class Reference implements VcsObject {
      * @param repository репозиторий, где требуется обновить информацию.
      * @throws IOException исключение, если возникли проблемы с чтением файла.
      */
-    public void refreshCommitHash(String newCommitHash, Repository repository) throws IOException {
+    public void refreshCommitHash(@NotNull String newCommitHash, @NotNull Repository repository) throws IOException {
         Files.write(getPathToObject(repository).toAbsolutePath(), newCommitHash.getBytes());
     }
 }

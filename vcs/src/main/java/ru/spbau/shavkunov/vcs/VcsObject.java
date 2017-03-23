@@ -1,5 +1,7 @@
 package ru.spbau.shavkunov.vcs;
 
+import org.jetbrains.annotations.NotNull;
+
 import java.nio.file.Path;
 
 /**
@@ -11,5 +13,5 @@ interface VcsObject {
      * @param repository репозиторий, в котором находится объект.
      * @return путь объекта к самому себе.
      */
-    Path getPathToObject(Repository repository);
+    @NotNull Path getPathToObject(@NotNull Repository repository);
 }

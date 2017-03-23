@@ -1,6 +1,7 @@
 package ru.spbau.shavkunov.vcs;
 
 import org.apache.commons.codec.digest.DigestUtils;
+import org.jetbrains.annotations.NotNull;
 import ru.spbau.shavkunov.vcs.exceptions.NotRegularFileException;
 
 import java.io.IOException;
@@ -22,7 +23,7 @@ public class Blob extends VcsObjectWithHash {
      * @throws NotRegularFileException исключение, если путь оказался не к файлу.
      * @throws IOException исключение, если возникли проблемы с чтением файла.
      */
-    public Blob(Path path, Repository repository) throws NotRegularFileException, IOException {
+    public Blob(@NotNull Path path, @NotNull Repository repository) throws NotRegularFileException, IOException {
         if (Files.isDirectory(path)) {
             throw new NotRegularFileException();
         }
@@ -37,13 +38,13 @@ public class Blob extends VcsObjectWithHash {
      * @param repository репозиторий, где лежит объект Blob
      * @throws IOException исключение, если возникли проблемы с чтением файла.
      */
-    public void fillFileWithContent(Path pathToFile, Repository repository) throws IOException {
+    public void fillFileWithContent(@NotNull Path pathToFile, @NotNull Repository repository) throws IOException {
         byte[] content = Files.readAllBytes(getPathToObject(repository));
         Files.write(pathToFile, content);
     }
 
     @Override
-    public Path getPathToObject(Repository repository) {
+    public @NotNull Path getPathToObject(@NotNull Repository repository) {
         return repository.getRootDirectory().resolve(OBJECTS_FOLDER).resolve(hash);
     }
 }
