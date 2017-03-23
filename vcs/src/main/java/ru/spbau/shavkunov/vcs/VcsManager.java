@@ -72,6 +72,10 @@ public class VcsManager {
         readIndex();
     }
 
+    public Map<Path, String> getIndex() {
+        return index;
+    }
+
     /**
      * Добавить файл в index.
      * @param pathToFile путь к файлу.
@@ -101,7 +105,7 @@ public class VcsManager {
             throw new NotRegularFileException();
         }
 
-        removeFileFromIndex(pathToFile);
+        removeFileFromIndex(pathToFile.normalize());
     }
 
     /**
@@ -116,43 +120,12 @@ public class VcsManager {
             throw new NotRegularFileException();
         }
 
-        Blob blob = new Blob(pathToFile, repository);
+        Path normalizedPath = pathToFile.normalize();
+        Blob blob = new Blob(normalizedPath, repository);
         String hash = blob.getHash();
-        addFileToIndex(pathToFile, hash);
+        addFileToIndex(normalizedPath, hash);
 
         return hash;
-    }
-
-    /**
-     * Создание дерева структуры файлов и папок репозитория.
-     * @return дерево с структурой папок.
-     * @throws IOException исключение, если возникли проблемы с чтением файла.
-     * @throws NotRegularFileException исключение, если вдруг объект Blob создается не от файла.
-     */
-    private @NotNull Tree createTreeFromIndex() throws IOException, NotRegularFileException {
-        HashMap<Path, Tree> trees = new HashMap<>();
-        Path rootPath = Paths.get("");
-        trees.put(rootPath, new Tree(rootPath));
-        for (Path pathToFile : index.keySet()) {
-            Path absolutePrefix = rootPath;
-            for (Path prefix : pathToFile) {
-                absolutePrefix = absolutePrefix.resolve(prefix);
-                if (!trees.containsKey(absolutePrefix)) {
-                    Tree prefixTree = new Tree(prefix);
-                    trees.put(absolutePrefix, prefixTree);
-                    if (absolutePrefix.getParent() != null) {
-                        trees.get(absolutePrefix.getParent()).addChild(prefixTree);
-                    }
-                }
-
-                if (absolutePrefix.equals(pathToFile)) {
-                    Blob blob = new Blob(pathToFile, repository);
-                    trees.get(pathToFile).addBlob(blob, pathToFile.toString());
-                }
-            }
-        }
-
-        return trees.get(rootPath);
     }
 
     /**
@@ -164,7 +137,7 @@ public class VcsManager {
      */
     public void commitChanges(@NotNull String author, @NotNull String message)
                               throws NotRegularFileException, IOException {
-        Tree tree = createTreeFromIndex();
+        Tree tree = Tree.createTreeFromIndex(index, repository);
         Reference ref = new Reference(repository);
         ArrayList<String> parentCommits = new ArrayList<>(Collections.singletonList(ref.getCommitHash()));
         Commit commit = new Commit(author, message, tree.getHash(), parentCommits, repository);

@@ -2,21 +2,24 @@ package ru.spbau.shavkunov.vcs;
 
 import org.apache.commons.io.FileUtils;
 import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 import ru.spbau.shavkunov.vcs.exceptions.*;
 
 import java.io.IOException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.*;
 import static ru.spbau.shavkunov.vcs.Constants.DEFAULT_BRANCH_NAME;
 import static ru.spbau.shavkunov.vcs.Constants.VCS_FOLDER;
 import static ru.spbau.shavkunov.vcs.TestConstants.pathToVcs;
+import static ru.spbau.shavkunov.vcs.TestConstants.rootPath;
 
 public class RepositoryTest {
-    private Path rootPath = Paths.get("");
+    @Before
+    public void setUp() throws IOException {
+        FileUtils.deleteDirectory(rootPath.resolve(VCS_FOLDER).toFile());
+    }
 
     @Test
     public void initRepository() throws Exception {

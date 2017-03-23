@@ -35,7 +35,7 @@ public class Repository {
             throw new NotDirectoryException(path.toString());
         }
 
-        Path rootDir = path.resolve(VCS_FOLDER);
+        Path rootDir = path.resolve(VCS_FOLDER).normalize().toAbsolutePath();
 
         Files.createDirectory(rootDir);
         Files.createDirectory(rootDir.resolve(OBJECTS_FOLDER));

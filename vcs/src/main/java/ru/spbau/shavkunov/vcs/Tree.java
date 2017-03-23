@@ -2,11 +2,15 @@ package ru.spbau.shavkunov.vcs;
 
 import org.apache.commons.codec.digest.DigestUtils;
 import org.jetbrains.annotations.NotNull;
+import ru.spbau.shavkunov.vcs.exceptions.NotRegularFileException;
 
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 
 import static ru.spbau.shavkunov.vcs.Constants.OBJECTS_FOLDER;
 
@@ -59,6 +63,53 @@ public class Tree extends VcsObjectWithHash {
             blobFiles = (HashSet<ObjectWithName<Blob>>) input.readObject();
             treeFiles = (HashSet<Tree>) input.readObject();
             prefix = (String) input.readObject();
+        }
+    }
+
+    /**
+     * Создание дерева структуры файлов и папок репозитория.
+     * @return дерево с структурой папок.
+     * @throws IOException исключение, если возникли проблемы с чтением файла.
+     * @throws NotRegularFileException исключение, если вдруг объект Blob создается не от файла.
+     */
+    public static @NotNull Tree createTreeFromIndex(Map<Path, String> index, Repository repository)
+                     throws IOException, NotRegularFileException {
+        HashMap<Path, Tree> trees = new HashMap<>();
+        Path rootPath = Paths.get(".").normalize().toAbsolutePath();
+        trees.put(rootPath, new Tree(rootPath));
+        for (Path pathToFile : index.keySet()) {
+            Path absolutePrefix = rootPath;
+            for (Path prefix : pathToFile) {
+                absolutePrefix = absolutePrefix.resolve(prefix);
+                if (!trees.containsKey(absolutePrefix)) {
+                    Tree prefixTree = new Tree(prefix);
+                    trees.put(absolutePrefix, prefixTree);
+                    if (absolutePrefix.getParent() != null) {
+                        trees.get(absolutePrefix.getParent()).addChild(prefixTree);
+                    }
+                }
+
+                if (absolutePrefix.equals(pathToFile)) {
+                    Blob blob = new Blob(pathToFile, repository);
+                    trees.get(pathToFile).addBlob(blob, pathToFile.toString());
+                }
+            }
+        }
+
+        return trees.get(rootPath);
+    }
+
+    public void printTree() {
+        printTreeRecursively(this, 0);
+    }
+
+    private void printTreeRecursively(Tree tree, int spaces) {
+        for (ObjectWithName<Blob> blob : tree.getBlobFiles()) {
+            System.out.println(blob.getName());
+        }
+
+        for (Tree subTree : tree.getTreeFiles()) {
+            printTreeRecursively(subTree, 2);
         }
     }
 

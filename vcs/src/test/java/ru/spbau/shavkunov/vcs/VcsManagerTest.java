@@ -15,19 +15,19 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 import static ru.spbau.shavkunov.vcs.Constants.VCS_FOLDER;
 import static ru.spbau.shavkunov.vcs.TestConstants.pathToVcs;
+import static ru.spbau.shavkunov.vcs.TestConstants.rootPath;
 
 public class VcsManagerTest {
-    private Path rootPath = Paths.get("");
     private Path pathToFile = pathToVcs.resolve("VcsObject.java");
     private VcsManager manager;
     private Repository repository;
 
     @Before
     public void setUp() throws IOException, NoRepositoryException {
+        FileUtils.deleteDirectory(rootPath.resolve(VCS_FOLDER).toFile());
         Repository.initRepository(rootPath);
         repository = Repository.getRepository(rootPath);
         manager = new VcsManager(repository);
@@ -55,13 +55,13 @@ public class VcsManagerTest {
     public void removeFile() throws Exception, NotRegularFileException {
         addFile();
         manager.removeFile(pathToFile);
-
-
+        BufferedReader reader = new BufferedReader(new FileReader(repository.getIndexPath().toFile()));
+        String line = reader.readLine();
+        assertNull(line);
     }
 
     @Test
-    public void commitChanges() throws Exception {
-
+    public void commitChanges() throws Exception, NotRegularFileException {
     }
 
     @Test
