@@ -28,7 +28,7 @@ public class Reference implements VcsObject {
         return repository.getRootDirectory().resolve(REFERENCES_FOLDER).resolve(name);
     }
 
-    public Reference(Repository repository) throws Exception {
+    public Reference(Repository repository) throws IOException {
         String head = repository.getCurrentHead();
         if (head.startsWith(REFERENCE_PREFIX)) {
             name = head.substring(REFERENCE_PREFIX.length());

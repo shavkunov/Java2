@@ -1,18 +1,17 @@
 package ru.spbau.shavkunov.vcs;
 
+import ru.spbau.shavkunov.vcs.exceptions.BranchAlreadyExistsException;
 import ru.spbau.shavkunov.vcs.exceptions.CannotDeleteCurrentBranchException;
 import ru.spbau.shavkunov.vcs.exceptions.NoBranchExistsException;
 import ru.spbau.shavkunov.vcs.exceptions.NotRegularFileException;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
-import java.io.IOException;
+import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 
+import static ru.spbau.shavkunov.vcs.Constants.INDEX_FILE;
 import static ru.spbau.shavkunov.vcs.Constants.REFERENCE_PREFIX;
 
 /**
@@ -24,7 +23,7 @@ public class VcsManager {
 
     /**
      * Чтение файла index, отвечающий за состояние репозитория.
-     * @throws IOException TODO
+     * @throws IOException исключение, если возникли проблемы с чтением файла.
      */
     private void readIndex() throws IOException {
         index = new HashMap<>();
@@ -38,6 +37,23 @@ public class VcsManager {
         }
     }
 
+    /**
+     * Сохранение изменений в файл index.
+     * @throws IOException исключение, если возникли проблемы с чтением файла.
+     */
+    private void updateIndex() throws IOException {
+        FileOutputStream outputStream = new FileOutputStream(new File(INDEX_FILE));
+        BufferedWriter bufferedWriter = new BufferedWriter(new OutputStreamWriter(outputStream));
+
+        for (Map.Entry<Path, String> entry : index.entrySet()) {
+            bufferedWriter.write(entry.getKey().toString() + " " + entry.getValue());
+            bufferedWriter.newLine();
+        }
+
+        bufferedWriter.flush();
+        bufferedWriter.close();
+    }
+
     public VcsManager(Repository repository) throws IOException {
         this.repository = repository;
         readIndex();
@@ -48,10 +64,19 @@ public class VcsManager {
         readIndex();
     }
 
+    /**
+     * Добавить файл в index.
+     * @param pathToFile путь к файлу.
+     * @param hash хеш добавляемого файла.
+     */
     private void addFileToIndex(Path pathToFile, String hash) {
         index.put(pathToFile, hash);
     }
 
+    /**
+     * Удалить файл из index.
+     * @param pathToFile путь к файлу.
+     */
     private void removeFileFromIndex(Path pathToFile) {
         index.remove(pathToFile);
     }
@@ -73,7 +98,7 @@ public class VcsManager {
      * Реализация команды add репозитория.
      * @param pathToFile путь к файлу, который нужно добавить.
      * @throws NotRegularFileException исключение, если путь оказался не к файлу.
-     * @throws IOException TODO
+     * @throws IOException исключение, если возникли проблемы с чтением файла.
      */
     public void addFile(Path pathToFile) throws NotRegularFileException, IOException {
         if (Files.isDirectory(pathToFile)) {
@@ -88,8 +113,8 @@ public class VcsManager {
     /**
      * Создание дерева структуры файлов и папок репозитория.
      * @return дерево с структурой папок.
-     * @throws IOException TODO
-     * @throws NotRegularFileException TODO
+     * @throws IOException исключение, если возникли проблемы с чтением файла.
+     * @throws NotRegularFileException исключение, если вдруг объект Blob создается не от файла.
      */
     private Tree createTreeFromIndex() throws IOException, NotRegularFileException {
         HashMap<Path, Tree> trees = new HashMap<>();
@@ -121,24 +146,24 @@ public class VcsManager {
      * Реализация команды commit.
      * @param author автор коммита
      * @param message сообщение при коммите
-     * @throws Exception TODO
-     * @throws NotRegularFileException TODO
+     * @throws NotRegularFileException аналогично исключению из createTreeFromIndex()
+     * @throws IOException исключение, если возникли проблемы с чтением файла.
      */
-    public void commitChanges(String author, String message) throws Exception, NotRegularFileException {
+    public void commitChanges(String author, String message) throws NotRegularFileException, IOException {
         Tree tree = createTreeFromIndex();
         Reference ref = new Reference(repository);
         ArrayList<String> parentCommits = new ArrayList<>(Collections.singletonList(ref.getCommitHash()));
         Commit commit = new Commit(author, message, tree.getHash(), parentCommits, repository);
         ref.refreshCommitHash(commit.getHash(), repository);
-        // TODO : update index
     }
 
     /**
      * Реалиация команды checkout, когда нужно создать новую ветку.
      * @param newBranchName имя новой ветки
-     * @throws Exception TODO
+     * @throws IOException исключение, если возникли проблемы с чтением файла.
+     * @throws BranchAlreadyExistsException если ветка уже существует.
      */
-    public void checkoutToNewBranch(String newBranchName) throws Exception {
+    public void checkoutToNewBranch(String newBranchName) throws IOException, BranchAlreadyExistsException {
         String currentHead = repository.getCurrentHead();
         if (currentHead.startsWith(REFERENCE_PREFIX)) {
             Reference currentReference = new Reference(repository);
@@ -152,10 +177,11 @@ public class VcsManager {
     /**
      * Реализация команды checkout системы контроля версий.
      * @param revision название ветки или хеш коммита
-     * @throws Exception TODO
+     * @throws IOException исключение, если возникли проблемы с чтением файла.
      * @throws NoBranchExistsException не существует ветки, на которую нужно переключиться
+     * @throws ClassNotFoundException если возникли проблемы с десериализацией.
      */
-    public void checkout(String revision) throws Exception, NoBranchExistsException {
+    public void checkout(String revision) throws NoBranchExistsException, IOException, ClassNotFoundException {
         if (revision.startsWith(REFERENCE_PREFIX)) {
             String branchName = revision.substring(REFERENCE_PREFIX.length());
             if (repository.isBranchExists(branchName)) {
@@ -177,8 +203,10 @@ public class VcsManager {
 
     /**
      * Удаление вообще состояния репозитория.
+     * @throws IOException исключение, если возникли проблемы с чтением файла.
+     * @throws ClassNotFoundException если возникли проблемы с десериализацией.
      */
-    private void cleanCurrentCommit(Path root) throws Exception {
+    private void cleanCurrentCommit(Path root) throws IOException, ClassNotFoundException {
         Reference currentReference = new Reference(repository);
         String commitHash = currentReference.getCommitHash();
         Commit commit = new Commit(commitHash, repository);
@@ -202,16 +230,20 @@ public class VcsManager {
     /**
      * Восстановление состояние репозитория по коммиту.
      * @param commitHash в хеше этого коммита находится восстанавливаемое состояние репозитория.
+     * @throws IOException исключение, если возникли проблемы с чтением файла.
+     * @throws ClassNotFoundException если возникли проблемы с десериализацией.
      */
     private void restoreCommit(String commitHash) throws IOException, ClassNotFoundException {
         Commit commit = new Commit(commitHash, repository);
         Tree tree = new Tree(commit.getTreeHash(), repository);
         addTree(tree, Paths.get(""));
+        updateIndex();
     }
 
     /**
      * Восстановление состояния репозитория соотвествующее дереву.
-     * @param tree в этом объекте хранится вся структура файлов и папок.
+     * @param tree в этом объекте хранится вся структура файлов и папок.ё
+     * @throws IOException исключение, если возникли проблемы с чтением файла.
      */
     private void addTree(Tree tree, Path root) throws IOException {
         for (ObjectWithName<Blob> file : tree.getBlobFiles()) {
@@ -231,7 +263,7 @@ public class VcsManager {
      * Удаление ветки в репозитории.
      * @param branchName имя ветки, которую нужно удалить.
      * @throws NoBranchExistsException исключение, если не существует удаляемой ветки.
-     * @throws IOException TODO
+     * @throws IOException исключение, если возникли проблемы с чтением файла.
      * @throws CannotDeleteCurrentBranchException исключение, если пользователь хочет удалить ветку, на которой
      * он находится в данный моментъ
      */
@@ -252,9 +284,10 @@ public class VcsManager {
     /**
      * Получение лога.
      * @return класс, знающий как выводить сообщения о коммитах.
-     * @throws Exception TODO
+     * @throws IOException исключение, если возникли проблемы с чтением файла.
+     * @throws ClassNotFoundException если возникли проблемы с десериализацией.
      */
-    public VcsLog getLog() throws Exception {
+    public VcsLog getLog() throws IOException, ClassNotFoundException {
         Reference reference = new Reference(repository);
         String currentCommitHash = reference.getCommitHash();
         Commit currentCommit = new Commit(currentCommitHash, repository);
@@ -273,8 +306,8 @@ public class VcsManager {
      * @param commits общий список, куда складываются неповторяющиеся коммиты.
      * @param commitHashes список хешей добавленных коммитов.
      * @param currentCommit предков этого коммита обходит dfs.
-     * @throws IOException TODO
-     * @throws ClassNotFoundException TODO
+     * @throws IOException исключение, если возникли проблемы с чтением файла.
+     * @throws ClassNotFoundException если возникли проблемы с десериализацией.
      */
     private void dfs(ArrayList<Commit> commits, HashSet<String> commitHashes, Commit currentCommit)
                      throws IOException, ClassNotFoundException {
@@ -290,8 +323,8 @@ public class VcsManager {
     /**
      * Реализация команды merge.
      * @param branchName имя ветку, которую нужно влить в текующую.
-     * @throws IOException
-     * @throws ClassNotFoundException
+     * @throws IOException исключение, если возникли проблемы с чтением файла.
+     * @throws ClassNotFoundException если возникли проблемы с десериализацией.
      */
     public void merge(String branchName) throws IOException, ClassNotFoundException {
         Reference newReference = new Reference(branchName, repository);
