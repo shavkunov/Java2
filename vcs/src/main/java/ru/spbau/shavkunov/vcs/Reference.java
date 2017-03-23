@@ -7,6 +7,7 @@ import java.util.Arrays;
 
 import static ru.spbau.shavkunov.vcs.Constants.REFERENCES_FOLDER;
 import static ru.spbau.shavkunov.vcs.Constants.REFERENCE_PREFIX;
+import static ru.spbau.shavkunov.vcs.Constants.VCS_FOLDER;
 
 /**
  * Класс, отвечающий за представление объекта reference(ссылка) в системе контроля версий.
@@ -25,7 +26,7 @@ public class Reference implements VcsObject {
 
     @Override
     public Path getPathToObject(Repository repository) {
-        return repository.getRootDirectory().resolve(REFERENCES_FOLDER).resolve(name);
+        return repository.getRootDirectory().resolve(VCS_FOLDER).resolve(REFERENCES_FOLDER).resolve(name);
     }
 
     /**
@@ -71,6 +72,6 @@ public class Reference implements VcsObject {
      * @throws IOException исключение, если возникли проблемы с чтением файла.
      */
     public void refreshCommitHash(String newCommitHash, Repository repository) throws IOException {
-        Files.write(getPathToObject(repository).resolve(name), newCommitHash.getBytes());
+        Files.write(getPathToObject(repository).toAbsolutePath(), newCommitHash.getBytes());
     }
 }

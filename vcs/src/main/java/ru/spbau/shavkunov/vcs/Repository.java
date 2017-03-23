@@ -39,6 +39,7 @@ public class Repository {
         Files.createDirectory(rootDir);
         Files.createDirectory(rootDir.resolve(OBJECTS_FOLDER));
         Files.createDirectory(rootDir.resolve(REFERENCES_FOLDER));
+        Files.createFile(rootDir.resolve(REFERENCES_FOLDER).resolve(DEFAULT_BRANCH_NAME));
         Files.createFile(rootDir.resolve(INDEX_FILE));
 
         Path pathToHead = rootDir.resolve(HEAD);
