@@ -14,7 +14,6 @@ import java.nio.file.Paths;
 import java.util.*;
 
 import static ru.spbau.shavkunov.vcs.Constants.REFERENCE_PREFIX;
-import static ru.spbau.shavkunov.vcs.Constants.VCS_FOLDER;
 
 /**
  * Класс отвечающий за логику взаимодействия между пользователем и репозиторием.
@@ -162,13 +161,13 @@ public class VcsManager {
             if (repository.isBranchExists(branchName)) {
                 Reference newReference = new Reference(branchName, repository);
                 String commitHash = newReference.getCommitHash();
-                cleanAll();
+                cleanCurrentCommit(Paths.get(""));
                 restoreCommit(commitHash);
             } else {
                 throw new NoBranchExistsException();
             }
         } else {
-            cleanAll();
+            cleanCurrentCommit(Paths.get(""));
             restoreCommit(revision);
         }
 
@@ -179,12 +178,24 @@ public class VcsManager {
     /**
      * Удаление вообще состояния репозитория.
      */
-    private void cleanAll() {
-        Path root = Paths.get("");
-        for (File file : root.toFile().listFiles()) {
-            if (!file.getName().equals(VCS_FOLDER)) {
-                file.delete(); // папки удаляются рекурсивно?
+    private void cleanCurrentCommit(Path root) throws Exception {
+        Reference currentReference = new Reference(repository);
+        String commitHash = currentReference.getCommitHash();
+        Commit commit = new Commit(commitHash, repository);
+        Tree tree = new Tree(commit.getTreeHash(), repository);
+        for (ObjectWithName<Blob> file : tree.getBlobFiles()) {
+            Path fileName = Paths.get(file.getName());
+            fileName.toFile().delete();
+            File parentDirectory = fileName.getParent().toFile();
+            if (parentDirectory.listFiles().length == 0) {
+                parentDirectory.delete();
             }
+        }
+
+        for (Tree subTree : tree.getTreeFiles()) {
+            Path treeDirectory = root.resolve(subTree.getPrefix());
+            Files.createDirectory(treeDirectory);
+            addTree(subTree, treeDirectory);
         }
     }
 
@@ -195,24 +206,24 @@ public class VcsManager {
     private void restoreCommit(String commitHash) throws IOException, ClassNotFoundException {
         Commit commit = new Commit(commitHash, repository);
         Tree tree = new Tree(commit.getTreeHash(), repository);
-        restoreTree(tree, Paths.get(""));
+        addTree(tree, Paths.get(""));
     }
 
     /**
      * Восстановление состояния репозитория соотвествующее дереву.
      * @param tree в этом объекте хранится вся структура файлов и папок.
      */
-    private void restoreTree(Tree tree, Path root) throws IOException {
+    private void addTree(Tree tree, Path root) throws IOException {
         for (ObjectWithName<Blob> file : tree.getBlobFiles()) {
             Blob blob = file.getContent();
             Path fileName = Paths.get(file.getName());
-            blob.fillFileWithContent(fileName, repository);
+            blob.fillFileWithContent(fileName, repository); // перезапишет файл, даже если тот существует
         }
 
         for (Tree subTree : tree.getTreeFiles()) {
             Path treeDirectory = root.resolve(subTree.getPrefix());
             Files.createDirectory(treeDirectory);
-            restoreTree(subTree, treeDirectory);
+            addTree(subTree, treeDirectory);
         }
     }
 
@@ -274,5 +285,17 @@ public class VcsManager {
                 dfs(commits, commitHashes, parentCommit);
             }
         }
+    }
+
+    /**
+     * Реализация команды merge.
+     * @param branchName имя ветку, которую нужно влить в текующую.
+     * @throws IOException
+     * @throws ClassNotFoundException
+     */
+    public void merge(String branchName) throws IOException, ClassNotFoundException {
+        Reference newReference = new Reference(branchName, repository);
+        String commitHash = newReference.getCommitHash();
+        restoreCommit(commitHash);
     }
 }

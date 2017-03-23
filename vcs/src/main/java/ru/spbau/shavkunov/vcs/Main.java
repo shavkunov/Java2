@@ -197,6 +197,23 @@ public class Main {
                 }
             }
 
+            case "merge": {
+                if (args.length < 2) {
+                    printHelp("No branch name specified");
+                    return;
+                }
+
+                String branchName = args[1];
+                try {
+                    VcsManager manager = new VcsManager(rootPath);
+                    manager.merge(branchName);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                } catch (ClassNotFoundException e) {
+                    e.printStackTrace();
+                }
+            }
+
             case "help": {
                 printHelp("");
                 break;
