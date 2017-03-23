@@ -28,6 +28,12 @@ public class Reference implements VcsObject {
         return repository.getRootDirectory().resolve(REFERENCES_FOLDER).resolve(name);
     }
 
+    /**
+     * Создание объекта ссылки репозитория. Если в head лежит название ветки, то это будет стандартной ссылкой, иначе
+     * ссылке будет хранится только хеш текущего коммита.
+     * @param repository репозиторий, где создается ссылка.
+     * @throws IOException исключение, если возникли проблемы с чтением файла.
+     */
     public Reference(Repository repository) throws IOException {
         String head = repository.getCurrentHead();
         if (head.startsWith(REFERENCE_PREFIX)) {
@@ -39,6 +45,12 @@ public class Reference implements VcsObject {
         }
     }
 
+    /**
+     * Создание ссылки конкретной ветки.
+     * @param name имя ветки.
+     * @param repository репозиторий, где создается ссылка.
+     * @throws IOException исключение, если возникли проблемы с чтением файла.
+     */
     public Reference(String name, Repository repository) throws IOException {
         this.name = name;
         commitHash = Arrays.toString(Files.readAllBytes(repository.getReferencesPath().resolve(name)));
@@ -52,6 +64,12 @@ public class Reference implements VcsObject {
         return commitHash;
     }
 
+    /**
+     * Обновление информации о текущем коммите.
+     * @param newCommitHash новый хеш коммита.
+     * @param repository репозиторий, где требуется обновить информацию.
+     * @throws IOException исключение, если возникли проблемы с чтением файла.
+     */
     public void refreshCommitHash(String newCommitHash, Repository repository) throws IOException {
         Files.write(getPathToObject(repository).resolve(name), newCommitHash.getBytes());
     }

@@ -18,7 +18,14 @@ import static ru.spbau.shavkunov.vcs.Constants.REFERENCE_PREFIX;
  * Класс отвечающий за логику взаимодействия между пользователем и репозиторием.
  */
 public class VcsManager {
+    /**
+     * Репозитоий, который упрявляется менеджером.
+     */
     private Repository repository;
+
+    /**
+     * Представление файла индекса -- множество путей файлов и их хешей.
+     */
     private Map<Path, String> index;
 
     /**

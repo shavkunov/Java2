@@ -7,6 +7,9 @@ import java.util.Comparator;
  * Класс, отвечающий за логику вывода сообщений коммитов.
  */
 public class VcsLog {
+    /**
+     * Список коммитов, сообщение о которых нужно вывести.
+     */
     private ArrayList<Commit> commits;
 
     public VcsLog(ArrayList<Commit> commits) {
@@ -14,12 +17,19 @@ public class VcsLog {
         this.commits = commits;
     }
 
+    /**
+     * Печать лога коммитов.
+     */
     public void printLog() {
         for (Commit commit : commits) {
             printCommitLog(commit);
         }
     }
 
+    /**
+     * Печать сообщения данного коммита.
+     * @param commit сообщение этого коммита нужно распечатать.
+     */
     private void printCommitLog(Commit commit) {
         String message = "Date : " + commit.getDate().toString() + "\n" +
                          "Author : " + commit.getAuthor() + "\n" +

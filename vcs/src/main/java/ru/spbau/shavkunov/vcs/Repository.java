@@ -14,6 +14,9 @@ import static ru.spbau.shavkunov.vcs.Constants.*;
  * Класс, осуществляющий всю внутреннюю работу с репозиторием.
  */
 public class Repository {
+    /**
+     * Корневая директория, где расположен репозиторий.
+     */
     private Path rootDirectory;
 
     public Path getRootDirectory() {
@@ -46,27 +49,53 @@ public class Repository {
         fileOutputStream.close();
     }
 
+    /**
+     * Получение ссылки на файл index.
+     * @return путь к файлу index.
+     */
     public Path getIndexPath() {
         return rootDirectory.resolve(VCS_FOLDER).resolve(INDEX_FILE);
     }
 
+    /**
+     * Получение ссылки на папку, где хранятся все объекты.
+     * @return путь к папке объектов.
+     */
     public Path getObjectsPath() {
         return rootDirectory.resolve(VCS_FOLDER).resolve(OBJECTS_FOLDER);
     }
 
+    /**
+     * Получение ссылки на папку, где хранятся все ветки.
+     * @return путь к папке ссылок.
+     */
     public Path getReferencesPath() {
         return rootDirectory.resolve(VCS_FOLDER).resolve(REFERENCES_FOLDER);
     }
 
+    /**
+     * Получение ссылки на head файл.
+     * @return путь к файлу head.
+     */
     private Path getHead() {
         return rootDirectory.resolve(VCS_FOLDER).resolve(HEAD);
     }
 
+    /**
+     * Получение содержимого файла head.
+     * @return содержимое файла head.
+     * @throws IOException исключение, если возникли проблемы с чтением файла.
+     */
     public String getCurrentHead() throws IOException {
         BufferedReader reader = new BufferedReader(new FileReader(getHead().toFile()));
         return reader.readLine();
     }
 
+    /**
+     * Запись информации в файл head.
+     * @param revision имя ветки или хеш коммита.
+     * @throws IOException исключение, если возникли проблемы с чтением файла.
+     */
     public void writeHead(String revision) throws IOException {
         if (getReferencesPath().resolve(revision).toFile().exists()) {
             Files.write(getHead(), (REFERENCE_PREFIX + revision).getBytes());
@@ -75,6 +104,13 @@ public class Repository {
         }
     }
 
+    /**
+     * Создание репозитория.
+     * @param path путь к репозиторию
+     * @return Инстанс класса Repository
+     * @throws IOException исключение, если возникли проблемы с чтением файла или файл не оказался директорией.
+     * @throws NoRepositoryException исключение, если по данному пути нет репозитория.
+     */
     public static Repository getRepository(Path path) throws IOException, NoRepositoryException {
         if (!Files.isDirectory(path)) {
             throw new NotDirectoryException(path.toString());
@@ -88,14 +124,26 @@ public class Repository {
         return new Repository(path);
     }
 
-    public Repository(Path rootDirectory) throws IOException {
+    public Repository(Path rootDirectory) {
         this.rootDirectory = rootDirectory;
     }
 
+    /**
+     * Удаление ветки.
+     * @param branchName ветку с этим именем требуется удалить.
+     * @throws IOException исключение, если возникли проблемы с чтением файла.
+     */
     public void deleteBranch(String branchName) throws IOException {
         Files.delete(getReferencesPath().resolve(branchName));
     }
 
+    /**
+     * Создание новой ветки.
+     * @param branchName имя новой ветки.
+     * @param commitHash хеш первого коммита этой ветки.
+     * @throws BranchAlreadyExistsException ветка на самом деле уже была создана.
+     * @throws IOException исключение, если возникли проблемы с чтением файла.
+     */
     public void createNewBranch(String branchName, String commitHash) throws BranchAlreadyExistsException, IOException {
         if (isBranchExists(branchName)) {
             throw new BranchAlreadyExistsException();
@@ -106,6 +154,11 @@ public class Repository {
         Files.write(getHead(), (REFERENCE_PREFIX + branchName).getBytes());
     }
 
+    /**
+     * Проверка существования ветки.
+     * @param branchName имя проверяемой ветки.
+     * @return true, если ветка с данным именем существует, false иначе.
+     */
     public boolean isBranchExists(String branchName) {
         Path branchPath = getReferencesPath().resolve(branchName);
         return branchPath.toFile().exists();

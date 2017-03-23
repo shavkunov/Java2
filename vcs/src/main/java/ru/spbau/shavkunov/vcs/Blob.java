@@ -20,7 +20,7 @@ public class Blob extends VcsObjectWithHash {
      * @param path путь к файлу пользователя.
      * @param repository репозиторий, куда добавится этот blob.
      * @throws NotRegularFileException исключение, если путь оказался не к файлу.
-     * @throws IOException TODO
+     * @throws IOException исключение, если возникли проблемы с чтением файла.
      */
     public Blob(Path path, Repository repository) throws NotRegularFileException, IOException {
         if (Files.isDirectory(path)) {
@@ -35,7 +35,7 @@ public class Blob extends VcsObjectWithHash {
      * Заполнение файла контентом объекта Blob
      * @param pathToFile путь к файлу
      * @param repository репозиторий, где лежит объект Blob
-     * @throws IOException TODO
+     * @throws IOException исключение, если возникли проблемы с чтением файла.
      */
     public void fillFileWithContent(Path pathToFile, Repository repository) throws IOException {
         byte[] content = Files.readAllBytes(getPathToObject(repository));
