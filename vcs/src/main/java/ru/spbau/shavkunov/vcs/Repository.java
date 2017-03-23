@@ -47,19 +47,19 @@ public class Repository {
     }
 
     public Path getIndexPath() {
-        return rootDirectory.resolve(INDEX_FILE);
+        return rootDirectory.resolve(VCS_FOLDER).resolve(INDEX_FILE);
     }
 
     public Path getObjectsPath() {
-        return rootDirectory.resolve(OBJECTS_FOLDER);
+        return rootDirectory.resolve(VCS_FOLDER).resolve(OBJECTS_FOLDER);
     }
 
     public Path getReferencesPath() {
-        return rootDirectory.resolve(REFERENCES_FOLDER);
+        return rootDirectory.resolve(VCS_FOLDER).resolve(REFERENCES_FOLDER);
     }
 
     private Path getHead() {
-        return rootDirectory.resolve(HEAD);
+        return rootDirectory.resolve(VCS_FOLDER).resolve(HEAD);
     }
 
     public String getCurrentHead() throws IOException {

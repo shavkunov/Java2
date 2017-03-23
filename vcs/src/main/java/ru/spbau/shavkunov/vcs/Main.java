@@ -28,7 +28,8 @@ public class Main {
                          "remove <path to file> \n" +
                          "checkout -b <name of new branch> \n" +
                          "checkout <name of existing branch> \n" +
-                         "log";
+                         "log \n" +
+                         "merge <branch name>";
         System.out.println(message);
 
     }
