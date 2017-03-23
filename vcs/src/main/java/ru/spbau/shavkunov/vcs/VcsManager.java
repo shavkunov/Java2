@@ -12,7 +12,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 
-import static ru.spbau.shavkunov.vcs.Constants.INDEX_FILE;
 import static ru.spbau.shavkunov.vcs.Constants.REFERENCE_PREFIX;
 
 /**
@@ -50,11 +49,12 @@ public class VcsManager {
      * @throws IOException исключение, если возникли проблемы с чтением файла.
      */
     private void updateIndex() throws IOException {
-        FileOutputStream outputStream = new FileOutputStream(new File(INDEX_FILE));
-        BufferedWriter bufferedWriter = new BufferedWriter(new OutputStreamWriter(outputStream));
+        FileWriter fileWriter = new FileWriter(repository.getIndexPath().toFile());
+        BufferedWriter bufferedWriter = new BufferedWriter(fileWriter);
 
         for (Map.Entry<Path, String> entry : index.entrySet()) {
-            bufferedWriter.write(entry.getKey().toString() + " " + entry.getValue());
+            String line = entry.getKey().toString() + " " + entry.getValue();
+            bufferedWriter.write(line);
             bufferedWriter.newLine();
         }
 
@@ -77,16 +77,18 @@ public class VcsManager {
      * @param pathToFile путь к файлу.
      * @param hash хеш добавляемого файла.
      */
-    private void addFileToIndex(@NotNull Path pathToFile, @NotNull String hash) {
+    private void addFileToIndex(@NotNull Path pathToFile, @NotNull String hash) throws IOException {
         index.put(pathToFile, hash);
+        updateIndex();
     }
 
     /**
      * Удалить файл из index.
      * @param pathToFile путь к файлу.
      */
-    private void removeFileFromIndex(@NotNull Path pathToFile) {
+    private void removeFileFromIndex(@NotNull Path pathToFile) throws IOException {
         index.remove(pathToFile);
+        updateIndex();
     }
 
     /**
@@ -94,7 +96,7 @@ public class VcsManager {
      * @param pathToFile путь к удаляемому файлу.
      * @throws NotRegularFileException исключение, если путь оказался не к файлу.
      */
-    public void removeFile(@NotNull Path pathToFile) throws NotRegularFileException {
+    public void removeFile(@NotNull Path pathToFile) throws NotRegularFileException, IOException {
         if (Files.isDirectory(pathToFile)) {
             throw new NotRegularFileException();
         }
