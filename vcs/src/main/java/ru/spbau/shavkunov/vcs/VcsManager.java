@@ -107,8 +107,9 @@ public class VcsManager {
      * @param pathToFile путь к файлу, который нужно добавить.
      * @throws NotRegularFileException исключение, если путь оказался не к файлу.
      * @throws IOException исключение, если возникли проблемы с чтением файла.
+     * @return хеш файла, добавленного в репозиторий.
      */
-    public void addFile(@NotNull Path pathToFile) throws NotRegularFileException, IOException {
+    public String addFile(@NotNull Path pathToFile) throws NotRegularFileException, IOException {
         if (Files.isDirectory(pathToFile)) {
             throw new NotRegularFileException();
         }
@@ -116,6 +117,8 @@ public class VcsManager {
         Blob blob = new Blob(pathToFile, repository);
         String hash = blob.getHash();
         addFileToIndex(pathToFile, hash);
+
+        return hash;
     }
 
     /**
