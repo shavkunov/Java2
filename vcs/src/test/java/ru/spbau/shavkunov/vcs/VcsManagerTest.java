@@ -17,11 +17,10 @@ import java.util.Arrays;
 
 import static org.junit.Assert.*;
 import static ru.spbau.shavkunov.vcs.Constants.VCS_FOLDER;
-import static ru.spbau.shavkunov.vcs.TestConstants.pathToVcs;
+import static ru.spbau.shavkunov.vcs.TestConstants.pathToFile;
 import static ru.spbau.shavkunov.vcs.TestConstants.rootPath;
 
 public class VcsManagerTest {
-    private Path pathToFile = pathToVcs.resolve("VcsObject.java");
     private VcsManager manager;
     private Repository repository;
 
@@ -34,17 +33,15 @@ public class VcsManagerTest {
     }
 
     @Test
-    public void addFile() throws Exception, NotRegularFileException {
-        pathToFile = pathToVcs.resolve("VcsObject.java");
+    public void addFileTest() throws Exception, NotRegularFileException {
         String hash = manager.addFile(pathToFile);
         Path pathToFileInVcs = repository.getObjectsPath().resolve(hash);
         assertTrue(pathToFileInVcs.toFile().exists());
         assertEquals(Arrays.toString(Files.readAllBytes(pathToFile)),
                      Arrays.toString(Files.readAllBytes(pathToFileInVcs)));
 
-        BufferedReader reader = new BufferedReader(new FileReader(repository.getIndexPath().toFile()));
-        String line = reader.readLine();
-        String pathWithHash[] = line.split(" ");
+        String firstIndexLine = getFirstLine(repository.getIndexPath());
+        String pathWithHash[] = firstIndexLine.split(" ");
         Path pathToFileInIndex = Paths.get(pathWithHash[0]);
         String hashFileInIndex = pathWithHash[1];
         assertEquals(hash, hashFileInIndex);
@@ -52,45 +49,63 @@ public class VcsManagerTest {
     }
 
     @Test
-    public void removeFile() throws Exception, NotRegularFileException {
-        addFile();
+    public void removeFileTest() throws Exception, NotRegularFileException {
+        addFileTest();
         manager.removeFile(pathToFile);
-        BufferedReader reader = new BufferedReader(new FileReader(repository.getIndexPath().toFile()));
-        String line = reader.readLine();
-        assertNull(line);
+        String firstIndexLine = getFirstLine(repository.getIndexPath());
+        assertNull(firstIndexLine);
     }
 
     @Test
-    public void commitChanges() throws Exception, NotRegularFileException {
+    public void commitChangesTest() throws Exception, NotRegularFileException {
+        addFileTest();
+        String author = "me";
+        String message = "test commit";
+        manager.commitChanges(author, message);
+
+        String commitHash = getFirstLine(repository.getReferencesPath().resolve("master"));
+        assertTrue(repository.getObjectsPath().resolve(commitHash).toFile().exists());
+        Commit commit = new Commit(commitHash, repository);
+
+        assertEquals(author, commit.getAuthor());
+        assertEquals(message, commit.getMessage());
+
+        Tree tree = new Tree(commit.getTreeHash(), repository);
+        assertTrue(tree.isFileExists(pathToFile));
     }
 
     @Test
-    public void checkoutToNewBranch() throws Exception {
+    public void checkoutToNewBranchTest() throws Exception {
 
     }
 
     @Test
-    public void checkout() throws Exception {
+    public void checkoutTest() throws Exception {
 
     }
 
     @Test
-    public void deleteBranch() throws Exception {
+    public void deleteBranchTest() throws Exception {
 
     }
 
     @Test
-    public void getLog() throws Exception {
+    public void getLogTest() throws Exception {
 
     }
 
     @Test
-    public void merge() throws Exception {
+    public void mergeTest() throws Exception {
 
     }
 
     @After
     public void tearDown() throws IOException {
-        FileUtils.deleteDirectory(rootPath.resolve(VCS_FOLDER).toFile());
+        //FileUtils.deleteDirectory(rootPath.resolve(VCS_FOLDER).toFile());
+    }
+
+    private String getFirstLine(Path pathToFile) throws IOException {
+        BufferedReader reader = new BufferedReader(new FileReader(pathToFile.toFile()));
+        return reader.readLine();
     }
 }

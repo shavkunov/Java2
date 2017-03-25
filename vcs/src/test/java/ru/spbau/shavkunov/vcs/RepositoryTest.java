@@ -12,7 +12,7 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.*;
 import static ru.spbau.shavkunov.vcs.Constants.DEFAULT_BRANCH_NAME;
 import static ru.spbau.shavkunov.vcs.Constants.VCS_FOLDER;
-import static ru.spbau.shavkunov.vcs.TestConstants.pathToVcs;
+import static ru.spbau.shavkunov.vcs.TestConstants.pathToFile;
 import static ru.spbau.shavkunov.vcs.TestConstants.rootPath;
 
 public class RepositoryTest {
@@ -22,7 +22,7 @@ public class RepositoryTest {
     }
 
     @Test
-    public void initRepository() throws Exception {
+    public void initRepositoryTest() throws Exception {
         Repository.initRepository(rootPath);
         Repository repository = Repository.getRepository(rootPath);
         assertThat(repository.getRootDirectory(), is(rootPath));
@@ -37,7 +37,7 @@ public class RepositoryTest {
         assertTrue(repository.isBranchExists(DEFAULT_BRANCH_NAME));
         VcsManager manager = new VcsManager(repository);
 
-        manager.addFile(pathToVcs.resolve("VcsObject.java"));
+        manager.addFile(pathToFile);
         manager.commitChanges("me", "test commit");
         String branchName = "testBranch";
         assertFalse(repository.isBranchExists(branchName));

@@ -2,22 +2,19 @@ package ru.spbau.shavkunov.vcs;
 
 import org.apache.commons.codec.digest.DigestUtils;
 import org.jetbrains.annotations.NotNull;
-import ru.spbau.shavkunov.vcs.exceptions.NotRegularFileException;
 
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Map;
 
 import static ru.spbau.shavkunov.vcs.Constants.OBJECTS_FOLDER;
 
 /**
  * Класс, отвечающий за представление структуры папок и файлов в репозитории.
  */
-public class Tree extends VcsObjectWithHash {
+public class Tree extends VcsObjectWithHash implements Serializable {
     /**
      * Список файлов с их именами(т.е. с путями к этим файлам) на текущем уровне.
      */
@@ -32,6 +29,11 @@ public class Tree extends VcsObjectWithHash {
      * Название папки, в которой находится текущее дерево.
      */
     private @NotNull String prefix;
+
+    /**
+     * Отступ при печати дерева.
+     */
+    private static int DEFAULT_INDENT = 2;
 
     public @NotNull String getPrefix() {
         return prefix;
@@ -64,61 +66,8 @@ public class Tree extends VcsObjectWithHash {
             treeFiles = (HashSet<Tree>) input.readObject();
             prefix = (String) input.readObject();
         }
-    }
 
-    /**
-     * Создание дерева структуры файлов и папок репозитория.
-     * @return дерево с структурой папок.
-     * @throws IOException исключение, если возникли проблемы с чтением файла.
-     * @throws NotRegularFileException исключение, если вдруг объект Blob создается не от файла.
-     */
-    public static @NotNull Tree createTreeFromIndex(Map<Path, String> index, Repository repository)
-                     throws IOException, NotRegularFileException {
-        HashMap<Path, Tree> trees = new HashMap<>();
-        Path rootPath = Paths.get(".").normalize().toAbsolutePath();
-        trees.put(rootPath, new Tree(rootPath));
-        for (Path pathToFile : index.keySet()) {
-            Path absolutePrefix = rootPath;
-            for (Path prefix : pathToFile) {
-                absolutePrefix = absolutePrefix.resolve(prefix);
-                if (!trees.containsKey(absolutePrefix)) {
-                    Tree prefixTree = new Tree(prefix);
-                    trees.put(absolutePrefix, prefixTree);
-                    if (absolutePrefix.getParent() != null) {
-                        trees.get(absolutePrefix.getParent()).addChild(prefixTree);
-                    }
-                }
-
-                if (absolutePrefix.equals(pathToFile)) {
-                    Blob blob = new Blob(pathToFile, repository);
-                    trees.get(pathToFile).addBlob(blob, pathToFile.toString());
-                }
-            }
-        }
-
-        return trees.get(rootPath);
-    }
-
-    public void printTree() {
-        printTreeRecursively(this, 0);
-    }
-
-    private void printTreeRecursively(Tree tree, int spaces) {
-        for (ObjectWithName<Blob> blob : tree.getBlobFiles()) {
-            System.out.println(blob.getName());
-        }
-
-        for (Tree subTree : tree.getTreeFiles()) {
-            printTreeRecursively(subTree, 2);
-        }
-    }
-
-    public @NotNull HashSet<ObjectWithName<Blob>> getBlobFiles() {
-        return blobFiles;
-    }
-
-    public @NotNull HashSet<Tree> getTreeFiles() {
-        return treeFiles;
+        hash = treeHash;
     }
 
     private @NotNull byte[] getContent() throws IOException {
@@ -134,6 +83,68 @@ public class Tree extends VcsObjectWithHash {
         }
 
         return content;
+    }
+
+    public void computeHash(Repository repository) throws IOException {
+        byte[] content = getContent();
+        hash = DigestUtils.sha1Hex(content);
+        Files.write(repository.getObjectsPath().resolve(hash), content);
+    }
+
+    private boolean isFileExists(Path rootPath, Path pathToFile) {
+        for (ObjectWithName<Blob> blob : blobFiles) {
+            if (blob.getName().equals(pathToFile.toString())) {
+                return true;
+            }
+        }
+
+        for (Tree subTree : treeFiles) {
+            Path subDirectory = rootPath.resolve(subTree.getPrefix());
+            if (pathToFile.toString().startsWith(subDirectory.toString())) {
+                return subTree.isFileExists(subDirectory, pathToFile);
+            }
+        }
+
+        return false;
+    }
+
+    public void printTree(int spaces) {
+        String indent = multiply("-", spaces);
+        for (ObjectWithName<Blob> blob : blobFiles) {
+            System.out.println(indent + blob.getName());
+        }
+
+        for (Tree subTree : treeFiles) {
+            System.out.println(indent + subTree.getPrefix());
+            subTree.printTree(spaces + DEFAULT_INDENT);
+        }
+    }
+
+    /**
+     * Поиск файла в дереве
+     * @param pathToFile путь искомого файла
+     * @return true, если файл присутствует, иначе false
+     */
+    public boolean isFileExists(Path pathToFile) {
+        return isFileExists(Paths.get(""), pathToFile);
+    }
+
+    private static @NotNull String multiply(@NotNull String sample, int amount) {
+        String copy = "";
+
+        for (int i = 0; i < amount; i++) {
+            copy += sample;
+        }
+
+        return copy;
+    }
+
+    public @NotNull HashSet<ObjectWithName<Blob>> getBlobFiles() {
+        return blobFiles;
+    }
+
+    public @NotNull HashSet<Tree> getTreeFiles() {
+        return treeFiles;
     }
 
     public void addBlob(@NotNull Blob blob, @NotNull String name) {

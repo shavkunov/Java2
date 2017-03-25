@@ -2,11 +2,13 @@ package ru.spbau.shavkunov.vcs;
 
 import org.jetbrains.annotations.NotNull;
 
+import java.io.Serializable;
+
 /**
  * Обертка над объектов, добавляемая ему имя.
  * @param <T> тип объекта, к которому приписываем имя.
  */
-public class ObjectWithName<T> implements Comparable<ObjectWithName<?>> {
+public class ObjectWithName<T> implements Comparable<ObjectWithName<?>>, Serializable {
     private @NotNull T object;
     private @NotNull String name;
 

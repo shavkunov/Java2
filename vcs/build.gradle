@@ -14,4 +14,5 @@ dependencies {
     compile group: 'org.jetbrains', name: 'annotations', version: '15.0'
     compile group: 'commons-codec', name: 'commons-codec', version: '1.10'
     compile group: 'commons-io', name: 'commons-io', version: '2.4'
+    compile group: 'org.mockito', name: 'mockito-core', version: '2.7.17'
 }
