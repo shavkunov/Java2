@@ -75,8 +75,15 @@ public class VcsManagerTest {
     }
 
     @Test
-    public void checkoutToNewBranchTest() throws Exception {
+    public void checkoutToNewBranchTest() throws Exception, NotRegularFileException {
+        addFileTest();
+        commitChangesTest();
+        String branchName = "test";
+        manager.checkoutToNewBranch(branchName);
 
+        assertTrue(repository.getReferencesPath().resolve(branchName).toFile().exists());
+        assertEquals(getFirstLine(repository.getReferencesPath().resolve("master")),
+                     getFirstLine(repository.getReferencesPath().resolve(branchName)));
     }
 
     @Test
