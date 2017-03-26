@@ -7,6 +7,7 @@ import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.HashMap;
 import java.util.HashSet;
 
 import static ru.spbau.shavkunov.vcs.Constants.OBJECTS_FOLDER;
@@ -159,5 +160,36 @@ public class Tree extends VcsObjectWithHash implements Serializable {
     @Override
     public @NotNull Path getPathToObject(@NotNull Repository repository) {
         return repository.getRootDirectory().resolve(OBJECTS_FOLDER).resolve(hash);
+    }
+
+    public @NotNull HashSet<ObjectWithName<Blob>> getAllFiles() {
+        HashSet<ObjectWithName<Blob>> result = new HashSet<>();
+        result.addAll(blobFiles);
+
+        for (Tree subTree : treeFiles) {
+            result.addAll(subTree.getAllFiles());
+        }
+
+        return result;
+    }
+
+    public void mergeWith(Tree tree) {
+        for (ObjectWithName<Blob> blob : tree.getBlobFiles()) {
+            blobFiles.add(blob);
+        }
+
+        HashMap<String, Tree> prefixWithTree = new HashMap<>();
+        for (Tree subTree : treeFiles) {
+            prefixWithTree.put(subTree.getPrefix(), subTree);
+        }
+
+        for (Tree subTree : tree.getTreeFiles()) {
+            if (prefixWithTree.containsKey(subTree.getPrefix())) {
+                Tree selectedTree = prefixWithTree.get(subTree.getPrefix());
+                selectedTree.mergeWith(subTree);
+            } else {
+                this.addChild(subTree);
+            }
+        }
     }
 }

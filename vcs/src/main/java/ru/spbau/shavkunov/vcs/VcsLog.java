@@ -40,4 +40,8 @@ public class VcsLog {
 
         System.out.println(message);
     }
+
+    public ArrayList<Commit> getCommits() {
+        return commits;
+    }
 }

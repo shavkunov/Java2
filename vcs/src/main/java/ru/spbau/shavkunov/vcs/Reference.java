@@ -2,16 +2,11 @@ package ru.spbau.shavkunov.vcs;
 
 import org.jetbrains.annotations.NotNull;
 
-import java.io.BufferedReader;
-import java.io.FileReader;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Arrays;
 
-import static ru.spbau.shavkunov.vcs.Constants.REFERENCES_FOLDER;
-import static ru.spbau.shavkunov.vcs.Constants.REFERENCE_PREFIX;
-import static ru.spbau.shavkunov.vcs.Constants.VCS_FOLDER;
+import static ru.spbau.shavkunov.vcs.Constants.*;
 
 /**
  * Класс, отвечающий за представление объекта reference(ссылка) в системе контроля версий.
@@ -30,7 +25,7 @@ public class Reference implements VcsObject {
 
     @Override
     public @NotNull Path getPathToObject(@NotNull Repository repository) {
-        return repository.getRootDirectory().resolve(VCS_FOLDER).resolve(REFERENCES_FOLDER).resolve(name);
+        return repository.getRootDirectory().resolve(REFERENCES_FOLDER).resolve(name);
     }
 
     /**
@@ -43,7 +38,7 @@ public class Reference implements VcsObject {
         String head = repository.getCurrentHead();
         if (head.startsWith(REFERENCE_PREFIX)) {
             name = head.substring(REFERENCE_PREFIX.length());
-            commitHash = getFirstLine(repository.getReferencesPath().resolve(name));
+            commitHash = Repository.getFirstLine(repository.getReferencesPath().resolve(name));
         } else {
             name = "Commit hash";
             commitHash = head;
@@ -58,7 +53,7 @@ public class Reference implements VcsObject {
      */
     public Reference(@NotNull String name, @NotNull Repository repository) throws IOException {
         this.name = name;
-        commitHash = Arrays.toString(Files.readAllBytes(repository.getReferencesPath().resolve(name)));
+        commitHash = Repository.getFirstLine(repository.getReferencesPath().resolve(name));
     }
 
     public @NotNull String getCommitHash() {
@@ -72,16 +67,6 @@ public class Reference implements VcsObject {
      * @throws IOException исключение, если возникли проблемы с чтением файла.
      */
     public void refreshCommitHash(@NotNull String newCommitHash, @NotNull Repository repository) throws IOException {
-        Files.write(getPathToObject(repository).toAbsolutePath(), newCommitHash.getBytes());
-    }
-
-    private String getFirstLine(Path pathToFile) throws IOException {
-        BufferedReader reader = new BufferedReader(new FileReader(pathToFile.toFile()));
-        String line = reader.readLine();
-        if (line == null) {
-            line = "";
-        }
-
-        return line;
+        Files.write(getPathToObject(repository), newCommitHash.getBytes());
     }
 }

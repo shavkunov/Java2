@@ -1,9 +1,6 @@
 package ru.spbau.shavkunov.vcs;
 
-import ru.spbau.shavkunov.vcs.exceptions.BranchAlreadyExistsException;
-import ru.spbau.shavkunov.vcs.exceptions.NoBranchExistsException;
-import ru.spbau.shavkunov.vcs.exceptions.NoRepositoryException;
-import ru.spbau.shavkunov.vcs.exceptions.NotRegularFileException;
+import ru.spbau.shavkunov.vcs.exceptions.*;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -11,6 +8,7 @@ import java.nio.file.Paths;
 import java.util.Objects;
 
 import static ru.spbau.shavkunov.vcs.Constants.REFERENCE_PREFIX;
+import static ru.spbau.shavkunov.vcs.Constants.USERNAME;
 
 // TODO : handle exceptions
 public class Main {
@@ -40,7 +38,7 @@ public class Main {
             return;
         }
 
-        Path rootPath = Paths.get("").toAbsolutePath();
+        Path rootPath = Paths.get("");
 
         switch (args[0]) {
             case "init": {
@@ -111,7 +109,7 @@ public class Main {
 
                 try {
                     VcsManager manager = new VcsManager(rootPath);
-                    manager.commitChanges(System.getProperty(Constants.USER_NAME_PROPERTY), message);
+                    manager.commitChanges(USERNAME, message);
                 } catch (IOException e) {
                     e.printStackTrace();
                 } catch (NotRegularFileException e) {
@@ -149,7 +147,7 @@ public class Main {
                     e.printStackTrace();
                 } catch (Exception e) {
                     e.printStackTrace();
-                } catch (NoBranchExistsException e) {
+                } catch (NoRevisionExistsException e) {
                     e.printStackTrace();
                 }
             }
@@ -211,6 +209,8 @@ public class Main {
                 } catch (IOException e) {
                     e.printStackTrace();
                 } catch (ClassNotFoundException e) {
+                    e.printStackTrace();
+                } catch (NotRegularFileException e) {
                     e.printStackTrace();
                 }
             }

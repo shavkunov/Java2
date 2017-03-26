@@ -83,6 +83,8 @@ public class Commit extends VcsObjectWithHash {
             treeHash = (String) input.readObject();
             parentCommits = (ArrayList<String>) input.readObject();
         }
+
+        hash = commitHash;
     }
 
     private @NotNull byte[] getContent() throws IOException {

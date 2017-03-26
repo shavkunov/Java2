@@ -39,6 +39,7 @@ public class Blob extends VcsObjectWithHash {
      * @throws IOException исключение, если возникли проблемы с чтением файла.
      */
     public void fillFileWithContent(@NotNull Path pathToFile, @NotNull Repository repository) throws IOException {
+        pathToFile.toFile().createNewFile();
         byte[] content = Files.readAllBytes(getPathToObject(repository));
         Files.write(pathToFile, content);
     }

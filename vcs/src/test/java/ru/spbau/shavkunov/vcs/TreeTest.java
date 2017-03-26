@@ -9,6 +9,7 @@ import ru.spbau.shavkunov.vcs.exceptions.NotRegularFileException;
 import java.io.IOException;
 
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 import static ru.spbau.shavkunov.vcs.TestConstants.pathToFile;
 import static ru.spbau.shavkunov.vcs.TestConstants.rootPath;
 
@@ -34,7 +35,8 @@ public class TreeTest {
     @Test
     public void checkFileInTree() throws IOException, NotRegularFileException {
         Tree tree = manager.createTreeFromIndex();
-        tree.isFileExists(pathToFile);
+        assertTrue(tree.isFileExists(pathToFile));
+        assertTrue(tree.getAllFiles().contains(pathToFile));
     }
 
     @After

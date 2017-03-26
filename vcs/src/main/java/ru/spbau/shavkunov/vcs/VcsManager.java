@@ -1,10 +1,7 @@
 package ru.spbau.shavkunov.vcs;
 
 import org.jetbrains.annotations.NotNull;
-import ru.spbau.shavkunov.vcs.exceptions.BranchAlreadyExistsException;
-import ru.spbau.shavkunov.vcs.exceptions.CannotDeleteCurrentBranchException;
-import ru.spbau.shavkunov.vcs.exceptions.NoBranchExistsException;
-import ru.spbau.shavkunov.vcs.exceptions.NotRegularFileException;
+import ru.spbau.shavkunov.vcs.exceptions.*;
 
 import java.io.*;
 import java.nio.file.Files;
@@ -12,7 +9,9 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 
+import static ru.spbau.shavkunov.vcs.Constants.MERGE_MESSAGE;
 import static ru.spbau.shavkunov.vcs.Constants.REFERENCE_PREFIX;
+import static ru.spbau.shavkunov.vcs.Constants.USERNAME;
 
 /**
  * Класс отвечающий за логику взаимодействия между пользователем и репозиторием.
@@ -136,25 +135,35 @@ public class VcsManager {
      */
     public @NotNull Tree createTreeFromIndex() throws IOException, NotRegularFileException {
         HashMap<Path, Tree> trees = new HashMap<>();
-        Path rootPath = Paths.get("").normalize();
+        Path rootPath = Paths.get(".").normalize();
         trees.put(rootPath, new Tree(rootPath));
         for (Path pathToFile : index.keySet()) {
             Path absolutePrefix = rootPath;
             for (Path prefix : pathToFile) {
                 absolutePrefix = absolutePrefix.resolve(prefix);
 
+                Tree selectedTree;
                 if (absolutePrefix.equals(pathToFile)) {
                     Blob blob = new Blob(pathToFile, repository);
-                    trees.get(pathToFile.getParent()).addBlob(blob, pathToFile.toString());
+
+                    if (pathToFile.getParent() == null) {
+                        selectedTree = trees.get(rootPath);
+                    } else {
+                        selectedTree = trees.get(pathToFile.getParent());
+                    }
+
+                    selectedTree.addBlob(blob, pathToFile.toString());
                 } else {
                     if (!trees.containsKey(absolutePrefix)) {
                         Tree prefixTree = new Tree(prefix);
                         trees.put(absolutePrefix, prefixTree);
                         if (absolutePrefix.getParent() != null) {
-                            trees.get(absolutePrefix.getParent()).addChild(prefixTree);
+                            selectedTree = trees.get(absolutePrefix.getParent());
                         } else {
-                            trees.get(rootPath).addChild(prefixTree);
+                            selectedTree = trees.get(rootPath);
                         }
+
+                        selectedTree.addChild(prefixTree);
                     }
                 }
             }
@@ -176,7 +185,12 @@ public class VcsManager {
                               throws NotRegularFileException, IOException {
         Tree tree = createTreeFromIndex();
         Reference ref = new Reference(repository);
-        ArrayList<String> parentCommits = new ArrayList<>(Collections.singletonList(ref.getCommitHash()));
+        ArrayList<String> parentCommits;
+        if (ref.getCommitHash().equals("")) {
+            parentCommits = new ArrayList<>();
+        } else {
+            parentCommits = new ArrayList<>(Collections.singletonList(ref.getCommitHash()));
+        }
         Commit commit = new Commit(author, message, tree.getHash(), parentCommits, repository);
         ref.refreshCommitHash(commit.getHash(), repository);
     }
@@ -202,27 +216,29 @@ public class VcsManager {
      * Реализация команды checkout системы контроля версий.
      * @param revision название ветки или хеш коммита
      * @throws IOException исключение, если возникли проблемы с чтением файла.
-     * @throws NoBranchExistsException не существует ветки, на которую нужно переключиться
+     * @throws NoRevisionExistsException не существует ни ветки ни хеша коммита, на которые можно переключиться
      * @throws ClassNotFoundException если возникли проблемы с десериализацией.
      */
-    public void checkout(@NotNull String revision) throws NoBranchExistsException, IOException, ClassNotFoundException {
-        if (revision.startsWith(REFERENCE_PREFIX)) {
-            String branchName = revision.substring(REFERENCE_PREFIX.length());
-            if (repository.isBranchExists(branchName)) {
-                Reference newReference = new Reference(branchName, repository);
-                String commitHash = newReference.getCommitHash();
-                cleanCurrentCommit(Paths.get(""));
-                restoreCommit(commitHash);
-            } else {
-                throw new NoBranchExistsException();
-            }
+    public void checkout(@NotNull String revision) throws IOException, ClassNotFoundException, NoRevisionExistsException {
+        if (!repository.isCommitExists(revision) && !repository.isBranchExists(revision)) {
+            throw new NoRevisionExistsException();
+        }
+
+        Reference currentReference = new Reference(repository);
+        String commitHash = currentReference.getCommitHash();
+        Commit commit = new Commit(commitHash, repository);
+        Tree tree = new Tree(commit.getTreeHash(), repository);
+        cleanCurrentCommit(tree);
+
+        if (repository.isBranchExists(revision)) {
+            Reference newReference = new Reference(revision, repository);
+            String commitHashToRestore = newReference.getCommitHash();
+            restoreCommit(commitHashToRestore);
         } else {
-            cleanCurrentCommit(Paths.get(""));
             restoreCommit(revision);
         }
 
         repository.writeHead(revision);
-        // TODO change index
     }
 
     /**
@@ -230,24 +246,22 @@ public class VcsManager {
      * @throws IOException исключение, если возникли проблемы с чтением файла.
      * @throws ClassNotFoundException если возникли проблемы с десериализацией.
      */
-    private void cleanCurrentCommit(@NotNull Path root) throws IOException, ClassNotFoundException {
-        Reference currentReference = new Reference(repository);
-        String commitHash = currentReference.getCommitHash();
-        Commit commit = new Commit(commitHash, repository);
-        Tree tree = new Tree(commit.getTreeHash(), repository);
+    private void cleanCurrentCommit(@NotNull Tree tree) throws IOException, ClassNotFoundException {
         for (ObjectWithName<Blob> file : tree.getBlobFiles()) {
             Path fileName = Paths.get(file.getName());
             fileName.toFile().delete();
-            File parentDirectory = fileName.getParent().toFile();
-            if (parentDirectory.listFiles().length == 0) {
-                parentDirectory.delete();
+            Path parentDirectory = fileName.getParent();
+            if (parentDirectory == null) {
+                parentDirectory = Paths.get(".");
+            }
+
+            if (parentDirectory.toFile().listFiles().length == 0) {
+                parentDirectory.toFile().delete();
             }
         }
 
         for (Tree subTree : tree.getTreeFiles()) {
-            Path treeDirectory = root.resolve(subTree.getPrefix());
-            Files.createDirectory(treeDirectory);
-            addTree(subTree, treeDirectory);
+            cleanCurrentCommit(subTree);
         }
     }
 
@@ -260,7 +274,8 @@ public class VcsManager {
     private void restoreCommit(@NotNull String commitHash) throws IOException, ClassNotFoundException {
         Commit commit = new Commit(commitHash, repository);
         Tree tree = new Tree(commit.getTreeHash(), repository);
-        addTree(tree, Paths.get(""));
+        index = new HashMap<>();
+        addTree(tree, Paths.get("."));
         updateIndex();
     }
 
@@ -273,6 +288,7 @@ public class VcsManager {
         for (ObjectWithName<Blob> file : tree.getBlobFiles()) {
             Blob blob = file.getContent();
             Path fileName = Paths.get(file.getName());
+            index.put(fileName, blob.getHash());
             blob.fillFileWithContent(fileName, repository); // перезапишет файл, даже если тот существует
         }
 
@@ -340,6 +356,7 @@ public class VcsManager {
             if (!commitHashes.contains(commitHash)) {
                 Commit parentCommit = new Commit(commitHash, repository);
                 commits.add(parentCommit);
+                commitHashes.add(commitHash);
                 dfs(commits, commitHashes, parentCommit);
             }
         }
@@ -351,9 +368,26 @@ public class VcsManager {
      * @throws IOException исключение, если возникли проблемы с чтением файла.
      * @throws ClassNotFoundException если возникли проблемы с десериализацией.
      */
-    public void merge(@NotNull String branchName) throws IOException, ClassNotFoundException {
+    public void merge(@NotNull String branchName) throws IOException, ClassNotFoundException, NotRegularFileException {
         Reference newReference = new Reference(branchName, repository);
         String commitHash = newReference.getCommitHash();
+        Commit commit = new Commit(commitHash, repository);
+        Tree branchTree = new Tree(commit.getTreeHash(), repository);
+        Tree currentTree = createTreeFromIndex();
+        currentTree.mergeWith(branchTree);
+        createIndexFromTree(currentTree);
         restoreCommit(commitHash);
+        commitChanges(USERNAME, MERGE_MESSAGE + commitHash);
+    }
+
+    private void createIndexFromTree(Tree tree) {
+        index.clear();
+        HashSet<ObjectWithName<Blob>> files = tree.getAllFiles();
+        for (ObjectWithName<Blob> file : files) {
+            Blob blob = file.getContent();
+            String filePath = file.getName();
+            String fileHash = blob.getHash();
+            index.put(Paths.get(filePath), fileHash);
+        }
     }
 }

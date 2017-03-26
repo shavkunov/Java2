@@ -35,7 +35,7 @@ public class Repository {
             throw new NotDirectoryException(path.toString());
         }
 
-        Path rootDir = path.resolve(VCS_FOLDER).normalize().toAbsolutePath();
+        Path rootDir = path.resolve(VCS_FOLDER).normalize();
 
         Files.createDirectory(rootDir);
         Files.createDirectory(rootDir.resolve(OBJECTS_FOLDER));
@@ -56,7 +56,7 @@ public class Repository {
      * @return путь к файлу index.
      */
     public @NotNull Path getIndexPath() {
-        return rootDirectory.resolve(VCS_FOLDER).resolve(INDEX_FILE);
+        return rootDirectory.resolve(INDEX_FILE);
     }
 
     /**
@@ -64,7 +64,7 @@ public class Repository {
      * @return путь к папке объектов.
      */
     public @NotNull Path getObjectsPath() {
-        return rootDirectory.resolve(VCS_FOLDER).resolve(OBJECTS_FOLDER);
+        return rootDirectory.resolve(OBJECTS_FOLDER);
     }
 
     /**
@@ -72,7 +72,7 @@ public class Repository {
      * @return путь к папке ссылок.
      */
     public @NotNull Path getReferencesPath() {
-        return rootDirectory.resolve(VCS_FOLDER).resolve(REFERENCES_FOLDER);
+        return rootDirectory.resolve(REFERENCES_FOLDER);
     }
 
     /**
@@ -80,7 +80,7 @@ public class Repository {
      * @return путь к файлу head.
      */
     private @NotNull Path getHead() {
-        return rootDirectory.resolve(VCS_FOLDER).resolve(HEAD);
+        return rootDirectory.resolve(HEAD);
     }
 
     /**
@@ -90,6 +90,7 @@ public class Repository {
      */
     public @NotNull String getCurrentHead() throws IOException {
         BufferedReader reader = new BufferedReader(new FileReader(getHead().toFile()));
+
         return reader.readLine();
     }
 
@@ -123,7 +124,7 @@ public class Repository {
             throw new NoRepositoryException();
         }
 
-        return new Repository(path);
+        return new Repository(rootDir);
     }
 
     public Repository(@NotNull Path rootDirectory) {
@@ -165,5 +166,19 @@ public class Repository {
     public boolean isBranchExists(@NotNull String branchName) {
         Path branchPath = getReferencesPath().resolve(branchName);
         return branchPath.toFile().exists();
+    }
+
+    public boolean isCommitExists(@NotNull String commitHash) {
+        return getObjectsPath().resolve(commitHash).toFile().exists();
+    }
+
+    public static String getFirstLine(Path pathToFile) throws IOException {
+        BufferedReader reader = new BufferedReader(new FileReader(pathToFile.toFile()));
+        String line = reader.readLine();
+        if (line == null) {
+            line = "";
+        }
+
+        return line;
     }
 }

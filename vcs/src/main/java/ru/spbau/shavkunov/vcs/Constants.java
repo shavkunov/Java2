@@ -11,5 +11,7 @@ public class Constants {
     public static final String DEFAULT_BRANCH_NAME = "master";
     public static final String INDEX_FILE = "index";
     public static final String USER_NAME_PROPERTY = "user.name";
+    public static final String USERNAME = System.getProperty(Constants.USER_NAME_PROPERTY);
     public static final String REFERENCE_PREFIX = "ref: ";
+    public static final String MERGE_MESSAGE = "Merged : ";
 }
