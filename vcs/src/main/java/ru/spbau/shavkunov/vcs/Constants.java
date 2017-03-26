@@ -14,4 +14,8 @@ public class Constants {
     public static final String USERNAME = System.getProperty(Constants.USER_NAME_PROPERTY);
     public static final String REFERENCE_PREFIX = "ref: ";
     public static final String MERGE_MESSAGE = "Merged : ";
+    public static final String UNTRACKED_MESSAGE = "Untracked files: ";
+    public static final String MODIFIED_MESSAGE = "Modified files: ";
+    public static final String STAGED_MESSAGE = "Staged files: ";
+    public static final String DELETED_MESSAGE = "Deleted files: ";
 }

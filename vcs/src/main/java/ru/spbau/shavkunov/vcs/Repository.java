@@ -181,4 +181,8 @@ public class Repository {
 
         return line;
     }
+
+    public void restoreFile(Path pathToFile, String fileHash) throws IOException {
+        Files.write(pathToFile, Files.readAllBytes(getObjectsPath().resolve(fileHash)));
+    }
 }

@@ -13,7 +13,7 @@ import static org.junit.Assert.assertTrue;
 import static ru.spbau.shavkunov.vcs.TestConstants.pathToFile;
 import static ru.spbau.shavkunov.vcs.TestConstants.rootPath;
 
-public class TreeTest {
+public class VcsTreeTest {
     private VcsManager manager;
     private VcsManagerTest test;
 
@@ -28,15 +28,15 @@ public class TreeTest {
 
     @Test
     public void checkCreatingTreeFromIndex() throws Exception, NotRegularFileException {
-        Tree tree = manager.createTreeFromIndex();
-        assertNotNull(tree.getHash());
+        VcsTree vcsTree = manager.createTreeFromIndex();
+        assertNotNull(vcsTree.getHash());
     }
 
     @Test
     public void checkFileInTree() throws IOException, NotRegularFileException {
-        Tree tree = manager.createTreeFromIndex();
-        assertTrue(tree.isFileExists(pathToFile));
-        assertTrue(tree.getAllFiles().contains(pathToFile));
+        VcsTree vcsTree = manager.createTreeFromIndex();
+        assertTrue(vcsTree.isFileExists(pathToFile));
+        assertTrue(vcsTree.getAllFiles().contains(pathToFile));
     }
 
     @After

@@ -4,10 +4,7 @@ import org.apache.commons.io.FileUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import ru.spbau.shavkunov.vcs.exceptions.CannotDeleteCurrentBranchException;
-import ru.spbau.shavkunov.vcs.exceptions.NoRepositoryException;
-import ru.spbau.shavkunov.vcs.exceptions.NoRevisionExistsException;
-import ru.spbau.shavkunov.vcs.exceptions.NotRegularFileException;
+import ru.spbau.shavkunov.vcs.exceptions.*;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -78,8 +75,8 @@ public class VcsManagerTest {
         assertEquals(author, commit.getAuthor());
         assertEquals(message, commit.getMessage());
 
-        Tree tree = new Tree(commit.getTreeHash(), repository);
-        assertTrue(tree.isFileExists(pathToFile));
+        VcsTree vcsTree = new VcsTree(commit.getTreeHash(), repository);
+        assertTrue(vcsTree.isFileExists(pathToFile));
     }
 
     @Test
@@ -99,15 +96,15 @@ public class VcsManagerTest {
         manager.addFile(rootPath.resolve("test1"));
         manager.addFile(rootPath.resolve("test2"));
         manager.commitChanges("me", "master 1 commit");
-        Tree masterTree = manager.createTreeFromIndex();
+        VcsTree masterVcsTree = manager.createTreeFromIndex();
 
         manager.checkoutToNewBranch("test");
         manager.addFile(rootPath.resolve("test").resolve("test3"));
         manager.commitChanges("me", "test 1 commit");
         manager.checkout("master");
-        Tree testTree = manager.createTreeFromIndex();
+        VcsTree testVcsTree = manager.createTreeFromIndex();
 
-        assertEquals(masterTree.getHash(), testTree.getHash());
+        assertEquals(masterVcsTree.getHash(), testVcsTree.getHash());
     }
 
     @Test(expected = CannotDeleteCurrentBranchException.class)
@@ -159,6 +156,33 @@ public class VcsManagerTest {
 
         VcsLog log = manager.getLog();
         assertEquals(MERGE_MESSAGE + featureCommitHash, log.getCommits().get(1).getMessage());
+    }
+
+    @Test
+    public void statusTest() throws IOException, NotRegularFileException,
+                                    NoRootDirectoryExistsException, ClassNotFoundException {
+        manager.addFile(rootPath.resolve("test1"));
+        manager.commitChanges("me", "master 1 commit");
+
+        manager.addFile(rootPath.resolve("test2"));
+        manager.removeFile(rootPath.resolve("test1"));
+
+        assertEquals(1, manager.getStagedFiles().size());
+        assertEquals("test2", manager.getStagedFiles().get(0));
+
+        assertEquals(1, manager.getDeletedFiles().size());
+        assertEquals("test1", manager.getDeletedFiles().get(0));
+    }
+
+    @Test
+    public void resetTest() {
+        // TODO
+    }
+
+    @Test
+    public void cleanTest() {
+        // TODO
+        // careful with untracked files!
     }
 
     @After
