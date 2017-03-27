@@ -40,21 +40,15 @@ public class VcsTree extends VcsObjectWithHash implements Tree, Serializable {
         return prefix;
     }
 
-    public VcsTree(@NotNull HashSet<ObjectWithName<Blob>> blobFiles, @NotNull HashSet<VcsTree> vcsTreeFiles,
-                   @NotNull Repository repository, @NotNull Path prefix) throws IOException {
-        this.blobFiles = blobFiles;
-        this.vcsTreeFiles = vcsTreeFiles;
-        this.prefix = prefix.toString();
-
-        byte[] content = getContent();
-        hash = DigestUtils.sha1Hex(content);
-        Files.write(repository.getObjectsPath().resolve(hash), content);
-    }
-
     public VcsTree(@NotNull Path prefix) {
         blobFiles = new HashSet<>();
         vcsTreeFiles = new HashSet<>();
-        this.prefix = prefix.toString();
+
+        if (prefix.toString().equals("")) {
+            this.prefix = ".";
+        } else {
+            this.prefix = prefix.toString();
+        }
     }
 
     public VcsTree(@NotNull String treeHash, @NotNull Repository repository) throws IOException, ClassNotFoundException {
@@ -136,7 +130,7 @@ public class VcsTree extends VcsObjectWithHash implements Tree, Serializable {
      */
     @Override
     public boolean isFileExists(Path pathToFile) {
-        return getFileHash(Paths.get("."), pathToFile) == null;
+        return getFileHash(pathToFile) != null;
     }
 
     public @NotNull HashSet<ObjectWithName<Blob>> getBlobFiles() {

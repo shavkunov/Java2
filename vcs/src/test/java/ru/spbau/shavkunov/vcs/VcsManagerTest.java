@@ -175,8 +175,16 @@ public class VcsManagerTest {
     }
 
     @Test
-    public void resetTest() {
-        // TODO
+    public void resetTest() throws IOException, NotRegularFileException, ClassNotFoundException {
+        Path pathToTest = rootPath.resolve("test1");
+        manager.addFile(pathToTest);
+        manager.commitChanges("me", "master 1 commit");
+        Files.write(pathToTest, "another text".getBytes());
+
+        assertEquals("test1", manager.getModifiedFiles().get(0));
+        manager.reset(pathToTest);
+
+        assertEquals("text1", Repository.getFirstLine(pathToTest));
     }
 
     @Test

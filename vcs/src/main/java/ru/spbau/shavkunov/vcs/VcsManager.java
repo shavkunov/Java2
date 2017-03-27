@@ -164,7 +164,7 @@ public class VcsManager {
                     selectedVcsTree.addBlob(blob, pathToFile.toString());
                 } else {
                     if (!trees.containsKey(absolutePrefix)) {
-                        VcsTree prefixVcsTree = new VcsTree(prefix);
+                        VcsTree prefixVcsTree = new VcsTree(rootPath);
                         trees.put(absolutePrefix, prefixVcsTree);
                         if (absolutePrefix.getParent() != null) {
                             selectedVcsTree = trees.get(absolutePrefix.getParent());
@@ -518,8 +518,9 @@ public class VcsManager {
         VcsTree commitVcsTree = new VcsTree(new Commit(new Reference(repository).getCommitHash(),
                 repository).getTreeHash(), repository);
 
-        if (commitVcsTree.isFileExists(pathToFile)) {
-            String fileHash = commitVcsTree.getFileHash(pathToFile);
+        String fileHash = commitVcsTree.getFileHash(pathToFile);
+        commitVcsTree.printTree(0);
+        if (fileHash != null) {
             repository.restoreFile(pathToFile, fileHash);
         } else {
             throw new NoSuchFileException(pathToFile.toString());
