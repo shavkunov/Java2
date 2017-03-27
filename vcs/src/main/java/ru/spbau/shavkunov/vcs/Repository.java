@@ -168,10 +168,21 @@ public class Repository {
         return branchPath.toFile().exists();
     }
 
+    /**
+     * Проверка существования коммита.
+     * @param commitHash хеш коммита.
+     * @return true, если коммит с таким хешом существует, иначе false.
+     */
     public boolean isCommitExists(@NotNull String commitHash) {
         return getObjectsPath().resolve(commitHash).toFile().exists();
     }
 
+    /**
+     * Получение первой строчки файла.
+     * @param pathToFile путь к файлу.
+     * @return первая строчка данного файла.
+     * @throws IOException исключение, если возникли проблемы с чтением файлов.
+     */
     public static String getFirstLine(Path pathToFile) throws IOException {
         BufferedReader reader = new BufferedReader(new FileReader(pathToFile.toFile()));
         String line = reader.readLine();
@@ -182,6 +193,12 @@ public class Repository {
         return line;
     }
 
+    /**
+     * Восстановление содержимого файла до состояния коммита.
+     * @param pathToFile путь к файлу.
+     * @param fileHash хеш файла.
+     * @throws IOException исключение, если возникли проблемы с чтением файлов.
+     */
     public void restoreFile(Path pathToFile, String fileHash) throws IOException {
         Files.write(pathToFile, Files.readAllBytes(getObjectsPath().resolve(fileHash)));
     }

@@ -39,6 +39,15 @@ public class Commit extends VcsObjectWithHash {
      */
     private @NotNull ArrayList<String> parentCommits;
 
+    /**
+     * Создание коммита и сохранение его в репозиторий.
+     * @param author автор коммита.
+     * @param message сообщение коммита.
+     * @param treeHash хеш дерева репозитория.
+     * @param parentCommits коммиты предки.
+     * @param repository репозиторий, где создается коммит.
+     * @throws IOException исключение, если возникли проблемы с чтением файлов.
+     */
     public Commit(@NotNull String author, @NotNull String message, @NotNull String treeHash,
                   @NotNull ArrayList<String> parentCommits, @NotNull Repository repository)
                  throws IOException {
@@ -51,6 +60,29 @@ public class Commit extends VcsObjectWithHash {
         byte[] content = getContent();
         hash = DigestUtils.sha1Hex(content);
         Files.write(repository.getObjectsPath().resolve(hash), content);
+    }
+
+    /**
+     * Получение коммита по хешу.
+     * @param commitHash хеш коммита.
+     * @param repository репозиторий, где нужно получить коммит.
+     * @throws IOException исключение, если возникли проблемы с чтением файлов.
+     * @throws ClassNotFoundException исключение, если не удалось интерпретировать данные(хеш не коммита)
+     */
+    public Commit(@NotNull String commitHash, @NotNull Repository repository) throws IOException, ClassNotFoundException {
+        byte[] content = Files.readAllBytes(repository.getObjectsPath().resolve(commitHash));
+
+        try (ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(content);
+             ObjectInputStream input = new ObjectInputStream(byteArrayInputStream)) {
+
+            date = (Date) input.readObject();
+            author = (String) input.readObject();
+            message = (String) input.readObject();
+            treeHash = (String) input.readObject();
+            parentCommits = (ArrayList<String>) input.readObject();
+        }
+
+        hash = commitHash;
     }
 
     public @NotNull Date getDate() {
@@ -67,22 +99,6 @@ public class Commit extends VcsObjectWithHash {
 
     public @NotNull String getTreeHash() {
         return treeHash;
-    }
-
-    public Commit(@NotNull String commitHash, @NotNull Repository repository) throws IOException, ClassNotFoundException {
-        byte[] content = Files.readAllBytes(repository.getObjectsPath().resolve(commitHash));
-
-        try (ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(content);
-             ObjectInputStream input = new ObjectInputStream(byteArrayInputStream)) {
-
-            date = (Date) input.readObject();
-            author = (String) input.readObject();
-            message = (String) input.readObject();
-            treeHash = (String) input.readObject();
-            parentCommits = (ArrayList<String>) input.readObject();
-        }
-
-        hash = commitHash;
     }
 
     private @NotNull byte[] getContent() throws IOException {

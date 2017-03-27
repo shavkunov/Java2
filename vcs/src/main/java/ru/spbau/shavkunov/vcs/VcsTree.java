@@ -49,6 +49,13 @@ public class VcsTree extends VcsObjectWithHash implements Tree, Serializable {
         }
     }
 
+    /**
+     * Получить дерево по его хешу.
+     * @param treeHash хеш дерева.
+     * @param repository репозиторий, где лежит hash дерева.
+     * @throws IOException исключение, если возникли проблемы с чтением файлов.
+     * @throws ClassNotFoundException исключение, если невозможно интерпретировать данные.
+     */
     public VcsTree(@NotNull String treeHash, @NotNull Repository repository) throws IOException, ClassNotFoundException {
         byte[] content = Files.readAllBytes(repository.getObjectsPath().resolve(treeHash));
 
@@ -78,12 +85,23 @@ public class VcsTree extends VcsObjectWithHash implements Tree, Serializable {
         return content;
     }
 
+    /**
+     * Вычисление хеша дерева.
+     * @param repository репозиторий, где будет вычислен хеш.
+     * @throws IOException исключение, если возникли проблемы с чтением файлов.
+     */
     public void computeHash(Repository repository) throws IOException {
         byte[] content = getContent();
         hash = DigestUtils.sha1Hex(content);
         Files.write(repository.getObjectsPath().resolve(hash), content);
     }
 
+    /**
+     * Получение хеша файла.
+     * @param rootPath некоторый префикс файла.
+     * @param pathToFile путь к файлу
+     * @return хеш файла, если такой в дереве нашелся, иначе null.
+     */
     private String getFileHash(Path rootPath, Path pathToFile) {
         for (ObjectWithName<Blob> blob : blobFiles) {
             if (blob.getName().equals(pathToFile.toString())) {
@@ -101,10 +119,16 @@ public class VcsTree extends VcsObjectWithHash implements Tree, Serializable {
         return null;
     }
 
+    /**
+     * Получение хеша файла.
+     * @param pathToFile путь к хешу.
+     * @return null, если файла нет в дереве, иначе его хеш.
+     */
     public String getFileHash(Path pathToFile) {
         return getFileHash(Paths.get("."), pathToFile);
     }
 
+    // TODO : ссылка на интерфейс
     @Override
     public void printTree(int spaces) {
         String indent = Tree.multiply("-", spaces + 1);
@@ -139,20 +163,33 @@ public class VcsTree extends VcsObjectWithHash implements Tree, Serializable {
         return vcsTreeFiles;
     }
 
+    /**
+     * Добавить в список файлов текущей директории еще один.
+     * @param blob объект blob.
+     * @param name имя файла.
+     */
     public void addBlob(@NotNull Blob blob, @NotNull String name) {
         blobFiles.add(new ObjectWithName<>(blob, name));
     }
 
+    /**
+     * Добавить в список директорий текущей директории еще одну.
+     * @param vcsTree директория, которую нужно добавить.
+     */
     public void addChild(@NotNull VcsTree vcsTree) {
         vcsTreeFiles.add(vcsTree);
     }
 
-
+    // TODO : ссылка на интерфейс
     @Override
     public @NotNull Path getPathToObject(@NotNull Repository repository) {
         return repository.getObjectsPath().resolve(hash);
     }
 
+    /**
+     * Получение всех файлов, которые находятся в дереве.
+     * @return множество всех объектов, содержащихся в дереве.
+     */
     public @NotNull HashSet<ObjectWithName<Blob>> getAllFiles() {
         HashSet<ObjectWithName<Blob>> result = new HashSet<>();
         result.addAll(blobFiles);
@@ -164,6 +201,10 @@ public class VcsTree extends VcsObjectWithHash implements Tree, Serializable {
         return result;
     }
 
+    /**
+     * Слияние с другим деревом.
+     * @param vcsTree дерево, которое вливается в текущее.
+     */
     public void mergeWith(VcsTree vcsTree) {
         for (ObjectWithName<Blob> blob : vcsTree.getBlobFiles()) {
             blobFiles.add(blob);

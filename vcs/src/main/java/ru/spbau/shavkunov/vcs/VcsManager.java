@@ -29,10 +29,19 @@ public class VcsManager {
      */
     private @NotNull Map<Path, String> index;
 
+    /**
+     * Добавленные файлы.
+     */
     private @Nullable ArrayList<String> stagedFiles;
 
+    /**
+     * Удаленные файлы.
+     */
     private @Nullable ArrayList<String> deletedFiles;
 
+    /**
+     * Измененные файлы.
+     */
     private @Nullable ArrayList<String> modifiedFiles;
 
     /**
@@ -77,10 +86,6 @@ public class VcsManager {
     public VcsManager(@NotNull Path pathToRepo) throws IOException {
         this.repository = new Repository(pathToRepo);
         readIndex();
-    }
-
-    public Map<Path, String> getIndex() {
-        return index;
     }
 
     /**
@@ -389,6 +394,10 @@ public class VcsManager {
         commitChanges(USERNAME, MERGE_MESSAGE + commitHash);
     }
 
+    /**
+     * Создание файла index из дерева.
+     * @param vcsTree дерево файлов.
+     */
     private void createIndexFromTree(VcsTree vcsTree) {
         index.clear();
         HashSet<ObjectWithName<Blob>> files = vcsTree.getAllFiles();
@@ -400,6 +409,11 @@ public class VcsManager {
         }
     }
 
+    /**
+     * Получение имен файлов из дерева.
+     * @param tree дерево файлов.
+     * @return множество путей к файлам.
+     */
     private Set<String> getFilesNames(VcsTree tree) {
         return tree.getAllFiles()
                    .stream()
@@ -407,6 +421,11 @@ public class VcsManager {
                    .collect(Collectors.toSet());
     }
 
+    /**
+     * Получение имен файлов с их хешами.
+     * @param tree дерево файлов.
+     * @return отображение из пути к файла к его хешу.
+     */
     private Map<String, String> getPathWithHashes(VcsTree tree) {
         return tree.getAllFiles()
                    .stream()
@@ -414,6 +433,13 @@ public class VcsManager {
                                              objectWithName -> objectWithName.getContent().getHash()));
     }
 
+    /**
+     * Реализация команды status. Вывод всех измененных/удаленных/недобавленных/добавленных файлов.
+     * @throws IOException исключение, если возникли проблемы с файлом.
+     * @throws NotRegularFileException исключение, если ожидали файл, а получили директорию.
+     * @throws ClassNotFoundException исключение, если невозможно интерпретировать данные.
+     * @throws NoRootDirectoryExistsException исключение, если не была найдена корневая директория репозитория.
+     */
     public void status() throws IOException, NotRegularFileException,
                                 ClassNotFoundException, NoRootDirectoryExistsException {
         printUntrackedFiles();
@@ -424,6 +450,11 @@ public class VcsManager {
         printList(DELETED_MESSAGE, deletedFiles);
     }
 
+    /**
+     * Вывод на экран списка с сообщением.
+     * @param message сообщение перед выводом списка.
+     * @param list список, который нужно вывести(каждый элемент на новой строке)
+     */
     private void printList(String message, ArrayList<String> list) {
         if (list.size() > 0) {
             System.out.println(message);
@@ -435,6 +466,13 @@ public class VcsManager {
         }
     }
 
+    /**
+     * Получение файлов, который находятся под контролем системы версий.
+     * @return множество путей к файлам.
+     * @throws IOException исключение, если возникли проблемы с файлом.
+     * @throws NotRegularFileException исключение, если ожидали файл, а получили директорию.
+     * @throws ClassNotFoundException исключение, если невозможно интерпретировать данные.
+     */
     private HashSet<String> getTrackedFiles() throws IOException, ClassNotFoundException, NotRegularFileException {
         VcsTree currentVcsTree = createTreeFromIndex();
         VcsTree commitVcsTree = new VcsTree(new Commit(new Reference(repository).getCommitHash(),
@@ -450,6 +488,13 @@ public class VcsManager {
         return union;
     }
 
+    /**
+     * Вывод файлов, не находящихся под контролем системы версий.
+     * @throws NoRootDirectoryExistsException исключение, если не была найдена корневая директория репозитория.
+     * @throws IOException исключение, если возникли проблемы с файлом.
+     * @throws NotRegularFileException исключение, если ожидали файл, а получили директорию.
+     * @throws ClassNotFoundException исключение, если невозможно интерпретировать данные.
+     */
     private void printUntrackedFiles() throws NoRootDirectoryExistsException, NotRegularFileException,
                                               IOException, ClassNotFoundException {
         FilesTree filesTree = new FilesTree(Paths.get("."), getTrackedFiles());
@@ -458,12 +503,26 @@ public class VcsManager {
         System.out.println();
     }
 
+    /**
+     * Получение файлов, не находящихся под контролем системы версий.
+     * @return множество путей к файлам.
+     * @throws NoRootDirectoryExistsException исключение, если не была найдена корневая директория репозитория.
+     * @throws IOException исключение, если возникли проблемы с файлом.
+     * @throws NotRegularFileException исключение, если ожидали файл, а получили директорию.
+     * @throws ClassNotFoundException исключение, если невозможно интерпретировать данные.
+     */
     public HashSet<String> getUntrackedFiles() throws NotRegularFileException, IOException,
                                                        ClassNotFoundException, NoRootDirectoryExistsException {
         FilesTree filesTree = new FilesTree(repository.getRootDirectory(), getTrackedFiles());
         return filesTree.getAllFiles();
     }
 
+    /**
+     * Получение файлов, по которым можно выдать результаты команды status.
+     * @throws IOException исключение, если возникли проблемы с файлом.
+     * @throws NotRegularFileException исключение, если ожидали файл, а получили директорию.
+     * @throws ClassNotFoundException исключение, если невозможно интерпретировать данные.
+     */
     private void getStatusFiles() throws IOException, ClassNotFoundException, NotRegularFileException {
         VcsTree currentVcsTree = createTreeFromIndex();
         VcsTree commitVcsTree = new VcsTree(new Commit(new Reference(repository).getCommitHash(),
@@ -490,6 +549,13 @@ public class VcsManager {
         }
     }
 
+    /**
+     * Получение добавленных файлов.
+     * @return множество путей к файлам.
+     * @throws IOException исключение, если возникли проблемы с файлом.
+     * @throws NotRegularFileException исключение, если ожидали файл, а получили директорию.
+     * @throws ClassNotFoundException исключение, если невозможно интерпретировать данные.
+     */
     public ArrayList<String> getStagedFiles() throws NotRegularFileException, IOException, ClassNotFoundException {
         if (stagedFiles == null) {
             getStatusFiles();
@@ -498,6 +564,13 @@ public class VcsManager {
         return stagedFiles;
     }
 
+    /**
+     * Получение удаленных файлов.
+     * @return множество путей к файлам.
+     * @throws IOException исключение, если возникли проблемы с файлом.
+     * @throws NotRegularFileException исключение, если ожидали файл, а получили директорию.
+     * @throws ClassNotFoundException исключение, если невозможно интерпретировать данные.
+     */
     public ArrayList<String> getDeletedFiles() throws NotRegularFileException, IOException, ClassNotFoundException {
         if (deletedFiles == null) {
             getStatusFiles();
@@ -506,6 +579,13 @@ public class VcsManager {
         return deletedFiles;
     }
 
+    /**
+     * Получение изменных файлов.
+     * @return множество путей к файлам.
+     * @throws IOException исключение, если возникли проблемы с файлом.
+     * @throws NotRegularFileException исключение, если ожидали файл, а получили директорию.
+     * @throws ClassNotFoundException исключение, если невозможно интерпретировать данные.
+     */
     public ArrayList<String> getModifiedFiles() throws NotRegularFileException, IOException, ClassNotFoundException {
         if (modifiedFiles == null) {
             getStatusFiles();
@@ -514,6 +594,12 @@ public class VcsManager {
         return modifiedFiles;
     }
 
+    /**
+     * Реализация команды reset. Восстанавливает файл до состояния коммита.
+     * @param pathToFile путь к файлу.
+     * @throws IOException исключение, если возникли проблемы с файлом.
+     * @throws ClassNotFoundException исключение, если невозможно интерпретировать данные.
+     */
     public void reset(Path pathToFile) throws IOException, ClassNotFoundException {
         VcsTree commitVcsTree = new VcsTree(new Commit(new Reference(repository).getCommitHash(),
                 repository).getTreeHash(), repository);
@@ -527,6 +613,13 @@ public class VcsManager {
         }
     }
 
+    /**
+     * Реализация команды clean. Удаление всех файлов, не находящихся под контролем системы версий.
+     * @throws NoRootDirectoryExistsException исключение, если не была найдена корневая директория репозитория.
+     * @throws IOException исключение, если возникли проблемы с файлом.
+     * @throws NotRegularFileException исключение, если ожидали файл, а получили директорию.
+     * @throws ClassNotFoundException исключение, если невозможно интерпретировать данные.
+     */
     public void clean() throws ClassNotFoundException, NotRegularFileException,
                                NoRootDirectoryExistsException, IOException {
         HashSet<String> untrackedFiles = getUntrackedFiles();

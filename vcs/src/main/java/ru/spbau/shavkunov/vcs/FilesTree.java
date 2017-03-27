@@ -8,11 +8,31 @@ import java.util.HashSet;
 
 import static ru.spbau.shavkunov.vcs.Constants.VCS_FOLDER;
 
+/**
+ * Класс, реализующий работу со структурой файлов, не добавленных в репозиторий.
+ */
 public class FilesTree implements Tree {
+    /**
+     * Файлы в текущей директории.
+     */
     private HashSet<String> files;
+
+    /**
+     * Директории в текущей директории.
+     */
     private HashSet<FilesTree> subTrees;
+
+    /**
+     * Название текущей директории.
+     */
     private String prefix;
 
+    /**
+     * Создание дерева файлов.
+     * @param rootPath корневая директория.
+     * @param exceptFiles файлы, которые не должны входить в дерево файлов.
+     * @throws NoRootDirectoryExistsException исключение, если не существует корневой директории.
+     */
     public FilesTree(Path rootPath, HashSet<String> exceptFiles) throws NoRootDirectoryExistsException {
         files = new HashSet<>();
         subTrees = new HashSet<>();
@@ -33,11 +53,19 @@ public class FilesTree implements Tree {
         }
     }
 
+    /**
+     * Аналогично основному конструктору, но с инициализацией директории дочерних деревьев.
+     * @param rootPath корневая директория.
+     * @param exceptFiles файлы, которые не должны входить в дерево файлов.
+     * @param prefix название текущей директории.
+     * @throws NoRootDirectoryExistsException исключение, если не существует корневой директории.
+     */
     private FilesTree(Path rootPath, String prefix, HashSet<String> exceptFiles) throws NoRootDirectoryExistsException {
         this(rootPath, exceptFiles);
         this.prefix = prefix;
     }
 
+    // TODO : ссылка на интерфейс
     @Override
     public void printTree(int spaces) {
         String indent = Tree.multiply("-", spaces + 1);
@@ -53,6 +81,7 @@ public class FilesTree implements Tree {
         }
     }
 
+    // TODO : ссылка на интерфейс
     @Override
     public boolean isFileExists(Path pathToFile) {
         if (files.contains(pathToFile.toString())) {
@@ -68,6 +97,10 @@ public class FilesTree implements Tree {
         return false;
     }
 
+    /**
+     * Получение всех файлов, которые находятся в текущей структуре файлов.
+     * @return HashSet всех путей файлов.
+     */
     public HashSet<String> getAllFiles() {
         HashSet<String> result = new HashSet<>();
         result.addAll(files);
