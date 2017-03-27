@@ -10,8 +10,6 @@ import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.HashSet;
 
-import static ru.spbau.shavkunov.vcs.Constants.OBJECTS_FOLDER;
-
 /**
  * Класс, отвечающий за представление структуры папок и файлов в репозитории.
  */
@@ -152,7 +150,7 @@ public class VcsTree extends VcsObjectWithHash implements Tree, Serializable {
 
     @Override
     public @NotNull Path getPathToObject(@NotNull Repository repository) {
-        return repository.getRootDirectory().resolve(OBJECTS_FOLDER).resolve(hash);
+        return repository.getObjectsPath().resolve(hash);
     }
 
     public @NotNull HashSet<ObjectWithName<Blob>> getAllFiles() {

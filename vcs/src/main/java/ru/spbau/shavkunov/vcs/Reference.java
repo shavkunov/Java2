@@ -25,7 +25,7 @@ public class Reference implements VcsObject {
 
     @Override
     public @NotNull Path getPathToObject(@NotNull Repository repository) {
-        return repository.getRootDirectory().resolve(REFERENCES_FOLDER).resolve(name);
+        return repository.getReferencesPath().resolve(name);
     }
 
     /**

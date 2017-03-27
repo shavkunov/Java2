@@ -458,9 +458,9 @@ public class VcsManager {
         System.out.println();
     }
 
-    private HashSet<String> getUntrackedFiles() throws NotRegularFileException, IOException,
+    public HashSet<String> getUntrackedFiles() throws NotRegularFileException, IOException,
                                                        ClassNotFoundException, NoRootDirectoryExistsException {
-        FilesTree filesTree = new FilesTree(Paths.get("."), getTrackedFiles());
+        FilesTree filesTree = new FilesTree(repository.getRootDirectory(), getTrackedFiles());
         return filesTree.getAllFiles();
     }
 
@@ -531,7 +531,7 @@ public class VcsManager {
                                NoRootDirectoryExistsException, IOException {
         HashSet<String> untrackedFiles = getUntrackedFiles();
         for (String path : untrackedFiles) {
-            File file = new File(path);
+            File file = repository.getRootDirectory().resolve(path).toFile();
             if (file.isDirectory()) {
                 FileUtils.deleteDirectory(file);
             } else {

@@ -10,7 +10,6 @@ import java.nio.file.Path;
 
 import static java.nio.file.LinkOption.NOFOLLOW_LINKS;
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
-import static ru.spbau.shavkunov.vcs.Constants.OBJECTS_FOLDER;
 
 /**
  * Класс, представляющий собой обертку над файлом пользователя.
@@ -46,6 +45,6 @@ public class Blob extends VcsObjectWithHash {
 
     @Override
     public @NotNull Path getPathToObject(@NotNull Repository repository) {
-        return repository.getRootDirectory().resolve(OBJECTS_FOLDER).resolve(hash);
+        return repository.getObjectsPath().resolve(hash);
     }
 }

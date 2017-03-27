@@ -21,7 +21,7 @@ public class Repository {
     private @NotNull Path rootDirectory;
 
     public @NotNull Path getRootDirectory() {
-        return rootDirectory;
+        return rootDirectory.getParent();
     }
 
     /**

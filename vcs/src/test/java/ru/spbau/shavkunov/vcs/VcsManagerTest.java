@@ -26,7 +26,7 @@ public class VcsManagerTest {
     @Before
     public void setUp() throws IOException, NoRepositoryException {
         FileUtils.deleteDirectory(rootPath.resolve(VCS_FOLDER).toFile());
-        rootPath.resolve("test").toFile().delete();
+        FileUtils.deleteDirectory(rootPath.resolve("test").toFile());
         rootPath.resolve("test1").toFile().delete();
         rootPath.resolve("test2").toFile().delete();
 
@@ -188,9 +188,19 @@ public class VcsManagerTest {
     }
 
     @Test
-    public void cleanTest() {
-        // TODO
-        // careful with untracked files!
+    public void cleanTest() throws IOException, NoRepositoryException, NotRegularFileException, NoRootDirectoryExistsException, ClassNotFoundException {
+        FileUtils.deleteDirectory(rootPath.resolve(VCS_FOLDER).toFile());
+        Path newRootPath = rootPath.resolve("test");
+        Repository.initRepository(newRootPath);
+        repository = Repository.getRepository(newRootPath);
+        manager = new VcsManager(repository);
+
+        manager.addFile(newRootPath.resolve("test3"));
+        manager.addFile(newRootPath.resolve("test4"));
+        manager.commitChanges("me", "master first commit");
+        manager.clean();
+
+        assertFalse(newRootPath.resolve("test5").toFile().exists());
     }
 
     @After
@@ -207,5 +217,7 @@ public class VcsManagerTest {
         Files.write(rootPath.resolve("test2"), "text2".getBytes());
         rootPath.resolve("test").toFile().mkdir();
         Files.write(rootPath.resolve("test").resolve("test3"), "test3".getBytes());
+        Files.write(rootPath.resolve("test").resolve("test4"), "test4".getBytes());
+        Files.write(rootPath.resolve("test").resolve("test5"), "test5".getBytes());
     }
 }

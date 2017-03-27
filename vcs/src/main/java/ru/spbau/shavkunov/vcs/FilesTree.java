@@ -6,6 +6,8 @@ import java.io.File;
 import java.nio.file.Path;
 import java.util.HashSet;
 
+import static ru.spbau.shavkunov.vcs.Constants.VCS_FOLDER;
+
 public class FilesTree implements Tree {
     private HashSet<String> files;
     private HashSet<FilesTree> subTrees;
@@ -24,7 +26,7 @@ public class FilesTree implements Tree {
             if (file.isDirectory()) {
                 subTrees.add(new FilesTree(file.toPath(), file.getName(), exceptFiles));
             } else {
-                if (!exceptFiles.contains(file.getPath())) {
+                if (!exceptFiles.contains(file.getPath()) && !file.getPath().contains(VCS_FOLDER)) {
                     files.add(file.getName());
                 }
             }

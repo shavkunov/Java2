@@ -10,8 +10,6 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
-import static ru.spbau.shavkunov.vcs.Constants.OBJECTS_FOLDER;
-
 /**
  * Реализация класс, который представляет собой некоторое состояние репозитория.
  */
@@ -111,6 +109,6 @@ public class Commit extends VcsObjectWithHash {
 
     @Override
     public @NotNull Path getPathToObject(@NotNull Repository repository) {
-        return repository.getRootDirectory().resolve(OBJECTS_FOLDER).resolve(hash);
+        return repository.getObjectsPath().resolve(hash);
     }
 }
