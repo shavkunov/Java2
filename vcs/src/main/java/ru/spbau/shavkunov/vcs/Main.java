@@ -1,15 +1,13 @@
 package ru.spbau.shavkunov.vcs;
 
 import org.apache.commons.cli.*;
-import ru.spbau.shavkunov.vcs.exceptions.BranchAlreadyExistsException;
-import ru.spbau.shavkunov.vcs.exceptions.NoRevisionExistsException;
-import ru.spbau.shavkunov.vcs.exceptions.NoRootDirectoryExistsException;
-import ru.spbau.shavkunov.vcs.exceptions.NotRegularFileException;
+import ru.spbau.shavkunov.vcs.exceptions.*;
 
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
+import static ru.spbau.shavkunov.vcs.Constants.REFERENCE_PREFIX;
 import static ru.spbau.shavkunov.vcs.Constants.USERNAME;
 
 public class Main {
@@ -20,6 +18,8 @@ public class Main {
     private static final String COMMIT_COMMAND = "commit";
     private static final String NEW_BRANCH_COMMAND = "new_branch";
     private static final String CHECKOUT_COMMAND = "checkout";
+    private static final String DELETE_BRANCH_COMMAND = "delete_branch";
+    private static final String BRANCH_COMMAND = "branch";
     private static final String LOG_COMMAND = "log";
     private static final String MERGE_COMMAND = "merge";
     private static final String STATUS_COMMAND = "status";
@@ -37,6 +37,10 @@ public class Main {
         options.addOption(checkoutOption());
         options.addOption(logOption());
         options.addOption(mergeOption());
+        options.addOption(deleteBranchOption());
+        options.addOption(branchOption());
+        options.addOption(statusOption());
+        options.addOption(cleanOption());
 
         CommandLineParser parser = new DefaultParser();
         try {
@@ -83,6 +87,14 @@ public class Main {
 
             if (cmd.hasOption(CLEAN_COMMAND)) {
                 handleClean(cmd);
+            }
+
+            if (cmd.hasOption(DELETE_BRANCH_COMMAND)) {
+                handleDeleteBranch(cmd);
+            }
+
+            if (cmd.hasOption(BRANCH_COMMAND)) {
+                handleBranch(cmd);
             }
         } catch (ParseException e) {
             e.printStackTrace();
@@ -224,6 +236,50 @@ public class Main {
         } catch (NoRevisionExistsException e) {
             e.printStackTrace();
         } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private static Option deleteBranchOption() {
+        Option deleteBranchOption = new Option(DELETE_BRANCH_COMMAND, true, "delete specified branch");
+        deleteBranchOption.setArgs(1);
+        return deleteBranchOption;
+    }
+
+    private static void handleDeleteBranch(CommandLine cmd) {
+        String[] deleteBranchArgs = cmd.getOptionValues(DELETE_BRANCH_COMMAND);
+        String branchName = deleteBranchArgs[0];
+
+        try {
+            VcsManager manager = new VcsManager(rootPath);
+            manager.deleteBranch(branchName);
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (NoBranchExistsException e) {
+            e.printStackTrace();
+        } catch (CannotDeleteCurrentBranchException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private static Option branchOption() {
+        Option branchOption = new Option(BRANCH_COMMAND, true, "get information of current branch or commit");
+        branchOption.setArgs(0);
+        return branchOption;
+    }
+
+    private static void handleBranch(CommandLine cmd) {
+        try {
+            Repository repository = Repository.getRepository(rootPath);
+            String currentHead = repository.getCurrentHead();
+            if (currentHead.startsWith(REFERENCE_PREFIX)) {
+                System.out.println("Current branch name : " + currentHead.substring(REFERENCE_PREFIX.length()));
+            } else {
+                System.out.println("Current hash of commit : " + currentHead);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (NoRepositoryException e) {
             e.printStackTrace();
         }
     }
