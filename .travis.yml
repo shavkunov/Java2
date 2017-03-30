@@ -5,5 +5,6 @@ jdk:
 
 env:
   - PROJECT_DIR=lazy
+  - PROJECT_DIR=vcs
 
 before_install: cd $PROJECT_DIR
