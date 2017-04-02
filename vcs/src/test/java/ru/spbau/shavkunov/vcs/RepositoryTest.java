@@ -19,6 +19,7 @@ public class RepositoryTest {
     @Before
     public void setUp() throws IOException {
         FileUtils.deleteDirectory(rootPath.resolve(VCS_FOLDER).toFile());
+        new VcsManagerTest().createTempDirectories();
     }
 
     @Test
@@ -50,5 +51,6 @@ public class RepositoryTest {
     @After
     public void tearDown() throws IOException {
         FileUtils.deleteDirectory(rootPath.resolve(VCS_FOLDER).toFile());
+        new VcsManagerTest().deleteTmpFiles();
     }
 }

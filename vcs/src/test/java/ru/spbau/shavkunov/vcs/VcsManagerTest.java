@@ -213,7 +213,7 @@ public class VcsManagerTest {
         deleteTmpFiles();
     }
 
-    private void deleteTmpFiles() throws IOException {
+    public void deleteTmpFiles() throws IOException {
         FileUtils.deleteDirectory(rootPath.resolve(VCS_FOLDER).toFile());
 
         FileUtils.deleteDirectory(rootPath.resolve("test").toFile());
@@ -221,7 +221,7 @@ public class VcsManagerTest {
         rootPath.resolve("test2").toFile().delete();
     }
 
-    private void createTempDirectories() throws IOException {
+    public void createTempDirectories() throws IOException {
         Files.write(rootPath.resolve("test1"), "text1".getBytes());
         Files.write(rootPath.resolve("test2"), "text2".getBytes());
         rootPath.resolve("test").toFile().mkdir();
