@@ -7,6 +7,7 @@ import org.junit.Test;
 import ru.spbau.shavkunov.vcs.exceptions.NotRegularFileException;
 
 import java.io.IOException;
+import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
@@ -36,7 +37,11 @@ public class VcsTreeTest {
     public void checkFileInTree() throws IOException, NotRegularFileException {
         VcsTree vcsTree = manager.createTreeFromIndex();
         assertTrue(vcsTree.isFileExists(pathToFile));
-        assertTrue(vcsTree.getAllFiles().contains(pathToFile));
+        assertTrue(vcsTree.getAllFiles()
+                          .stream()
+                          .map(ObjectWithName::getName)
+                          .collect(Collectors.toSet())
+                          .contains(pathToFile.toString()));
     }
 
     @After
