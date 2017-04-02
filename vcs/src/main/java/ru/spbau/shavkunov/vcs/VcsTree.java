@@ -7,22 +7,23 @@ import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 
 /**
  * Класс, отвечающий за представление структуры папок и файлов в репозитории.
  */
-public class VcsTree extends VcsObjectWithHash implements Tree, Serializable {
+public class VcsTree extends VcsObjectWithHash implements Tree, Serializable, Comparable<VcsTree> {
     /**
      * Список файлов с их именами(т.е. с путями к этим файлам) на текущем уровне.
      */
-    private @NotNull HashSet<ObjectWithName<Blob>> blobFiles;
+    private @NotNull ArrayList<ObjectWithName<Blob>> blobFiles;
 
     /**
      * Список деревьев, располженных уровнями ниже.
      */
-    private @NotNull HashSet<VcsTree> vcsTreeFiles;
+    private @NotNull ArrayList<VcsTree> vcsTreeFiles;
 
     /**
      * Название папки, в которой находится текущее дерево.
@@ -39,8 +40,8 @@ public class VcsTree extends VcsObjectWithHash implements Tree, Serializable {
     }
 
     public VcsTree(@NotNull Path prefix) {
-        blobFiles = new HashSet<>();
-        vcsTreeFiles = new HashSet<>();
+        blobFiles = new ArrayList<>();
+        vcsTreeFiles = new ArrayList<>();
 
         if (prefix.toString().equals("")) {
             this.prefix = ".";
@@ -62,8 +63,8 @@ public class VcsTree extends VcsObjectWithHash implements Tree, Serializable {
         try (ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(content);
              ObjectInputStream input = new ObjectInputStream(byteArrayInputStream)) {
 
-            blobFiles = (HashSet<ObjectWithName<Blob>>) input.readObject();
-            vcsTreeFiles = (HashSet<VcsTree>) input.readObject();
+            blobFiles = (ArrayList<ObjectWithName<Blob>>) input.readObject();
+            vcsTreeFiles = (ArrayList<VcsTree>) input.readObject();
             prefix = (String) input.readObject();
         }
 
@@ -72,6 +73,9 @@ public class VcsTree extends VcsObjectWithHash implements Tree, Serializable {
 
     private @NotNull byte[] getContent() throws IOException {
         byte[] content;
+        blobFiles.sort(ObjectWithName::compareTo);
+        vcsTreeFiles.sort(VcsTree::compareTo);
+
         try (ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
              ObjectOutputStream output = new ObjectOutputStream(byteArrayOutputStream)) {
 
@@ -140,7 +144,6 @@ public class VcsTree extends VcsObjectWithHash implements Tree, Serializable {
         }
 
         for (VcsTree subVcsTree : vcsTreeFiles) {
-            System.out.println(indent + subVcsTree.getPrefix());
             subVcsTree.printTree(spaces + DEFAULT_INDENT);
         }
     }
@@ -155,11 +158,11 @@ public class VcsTree extends VcsObjectWithHash implements Tree, Serializable {
         return getFileHash(pathToFile) != null;
     }
 
-    public @NotNull HashSet<ObjectWithName<Blob>> getBlobFiles() {
+    public @NotNull ArrayList<ObjectWithName<Blob>> getBlobFiles() {
         return blobFiles;
     }
 
-    public @NotNull HashSet<VcsTree> getVcsTreeFiles() {
+    public @NotNull ArrayList<VcsTree> getVcsTreeFiles() {
         return vcsTreeFiles;
     }
 
@@ -223,5 +226,10 @@ public class VcsTree extends VcsObjectWithHash implements Tree, Serializable {
                 this.addChild(subVcsTree);
             }
         }
+    }
+
+    @Override
+    public int compareTo(@NotNull VcsTree tree) {
+        return prefix.compareTo(tree.getPrefix());
     }
 }

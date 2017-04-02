@@ -21,7 +21,7 @@ public class Repository {
     private @NotNull Path rootDirectory;
 
     public @NotNull Path getRootDirectory() {
-        return rootDirectory.getParent();
+        return rootDirectory;
     }
 
     /**
@@ -56,7 +56,7 @@ public class Repository {
      * @return путь к файлу index.
      */
     public @NotNull Path getIndexPath() {
-        return rootDirectory.resolve(INDEX_FILE);
+        return rootDirectory.resolve(VCS_FOLDER).resolve(INDEX_FILE);
     }
 
     /**
@@ -64,7 +64,7 @@ public class Repository {
      * @return путь к папке объектов.
      */
     public @NotNull Path getObjectsPath() {
-        return rootDirectory.resolve(OBJECTS_FOLDER);
+        return rootDirectory.resolve(VCS_FOLDER).resolve(OBJECTS_FOLDER);
     }
 
     /**
@@ -72,7 +72,7 @@ public class Repository {
      * @return путь к папке ссылок.
      */
     public @NotNull Path getReferencesPath() {
-        return rootDirectory.resolve(REFERENCES_FOLDER);
+        return rootDirectory.resolve(VCS_FOLDER).resolve(REFERENCES_FOLDER);
     }
 
     /**
@@ -80,7 +80,7 @@ public class Repository {
      * @return путь к файлу head.
      */
     private @NotNull Path getHead() {
-        return rootDirectory.resolve(HEAD);
+        return rootDirectory.resolve(VCS_FOLDER).resolve(HEAD);
     }
 
     /**
@@ -124,7 +124,7 @@ public class Repository {
             throw new NoRepositoryException();
         }
 
-        return new Repository(rootDir);
+        return new Repository(path);
     }
 
     public Repository(@NotNull Path rootDirectory) {

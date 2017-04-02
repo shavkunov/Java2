@@ -2,6 +2,8 @@ package ru.spbau.shavkunov.vcs;
 
 import org.apache.commons.codec.digest.DigestUtils;
 import org.jetbrains.annotations.NotNull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import ru.spbau.shavkunov.vcs.exceptions.NotRegularFileException;
 
 import java.io.IOException;
@@ -15,6 +17,8 @@ import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
  * Класс, представляющий собой обертку над файлом пользователя.
  */
 public class Blob extends VcsObjectWithHash {
+    private static final Logger logger = LoggerFactory.getLogger(Blob.class);
+
     /**
      * Создание объекта Blob.
      * @param path путь к файлу пользователя.
@@ -28,6 +32,7 @@ public class Blob extends VcsObjectWithHash {
         }
 
         hash = DigestUtils.sha1Hex(Files.readAllBytes(path));
+        logger.debug("Created blob with hash : " + hash);
         Files.copy(path, repository.getObjectsPath().resolve(hash), REPLACE_EXISTING, NOFOLLOW_LINKS);
     }
 

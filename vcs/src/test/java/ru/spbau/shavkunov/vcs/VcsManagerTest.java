@@ -6,6 +6,9 @@ import org.junit.Before;
 import org.junit.Test;
 import ru.spbau.shavkunov.vcs.exceptions.*;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -25,10 +28,7 @@ public class VcsManagerTest {
 
     @Before
     public void setUp() throws IOException, NoRepositoryException {
-        FileUtils.deleteDirectory(rootPath.resolve(VCS_FOLDER).toFile());
-        FileUtils.deleteDirectory(rootPath.resolve("test").toFile());
-        rootPath.resolve("test1").toFile().delete();
-        rootPath.resolve("test2").toFile().delete();
+        deleteTmpFiles();
 
         Repository.initRepository(rootPath);
         repository = Repository.getRepository(rootPath);
@@ -98,6 +98,11 @@ public class VcsManagerTest {
         manager.commitChanges("me", "master 1 commit");
         VcsTree masterVcsTree = manager.createTreeFromIndex();
 
+        Reference currentReference = new Reference(repository);
+        Commit currentCommit = new Commit(currentReference.getCommitHash(), repository);
+        assertEquals(currentCommit.getTreeHash(),
+                     masterVcsTree.getHash());
+
         manager.checkoutToNewBranch("test");
         manager.addFile(rootPath.resolve("test").resolve("test3"));
         manager.commitChanges("me", "test 1 commit");
@@ -150,7 +155,7 @@ public class VcsManagerTest {
         manager.addFile(rootPath.resolve("test").resolve("test3"));
         manager.commitChanges("me", "implemented feature");
         String featureCommitHash = Repository.getFirstLine(repository.getReferencesPath().resolve("feature"));
-        TimeUnit.SECONDS.sleep(2);
+        TimeUnit.SECONDS.sleep(1);
         manager.checkout("master");
         manager.merge("feature");
 
@@ -205,6 +210,10 @@ public class VcsManagerTest {
 
     @After
     public void tearDown() throws IOException {
+        deleteTmpFiles();
+    }
+
+    private void deleteTmpFiles() throws IOException {
         FileUtils.deleteDirectory(rootPath.resolve(VCS_FOLDER).toFile());
 
         FileUtils.deleteDirectory(rootPath.resolve("test").toFile());
@@ -219,5 +228,20 @@ public class VcsManagerTest {
         Files.write(rootPath.resolve("test").resolve("test3"), "test3".getBytes());
         Files.write(rootPath.resolve("test").resolve("test4"), "test4".getBytes());
         Files.write(rootPath.resolve("test").resolve("test5"), "test5".getBytes());
+    }
+
+    private void printIndexFile() {
+        File index = Paths.get(".").resolve(VCS_FOLDER).resolve("index").toFile();
+
+        try (BufferedReader br = new BufferedReader(new FileReader(index))) {
+            String line;
+            while ((line = br.readLine()) != null) {
+                System.out.println(line);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        System.out.println();
     }
 }

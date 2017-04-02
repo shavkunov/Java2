@@ -1,6 +1,8 @@
 package ru.spbau.shavkunov.vcs;
 
 import org.jetbrains.annotations.NotNull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -13,6 +15,8 @@ import static ru.spbau.shavkunov.vcs.Constants.*;
  * Ссылка указывает на текущую ветку и хеш коммита, отвечающий за текущее состояние репозитория.
  */
 public class Reference implements VcsObject {
+    private static final Logger logger = LoggerFactory.getLogger(VcsManager.class);
+
     /**
      * Название файла в папке refs
      */
@@ -43,6 +47,8 @@ public class Reference implements VcsObject {
             name = "Commit hash";
             commitHash = head;
         }
+
+        logger.debug("Created reference. Commit hash : " + commitHash);
     }
 
     /**
