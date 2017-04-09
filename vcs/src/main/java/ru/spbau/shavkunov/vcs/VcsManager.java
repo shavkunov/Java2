@@ -104,7 +104,8 @@ public class VcsManager {
         } else {
             parentCommits = new ArrayList<>(Collections.singletonList(ref.getCommitHash()));
         }
-        Commit commit = new Commit(author, message, vcsTree.getHash(), parentCommits, repository);
+        Commit commit = new Commit(author, message, vcsTree.getHash(), parentCommits);
+        repository.storeObject(commit);
         logger.debug("Commit : " + commit.getHash());
         ref.refreshCommitHash(commit.getHash(), repository);
         logger.debug("Committed file changes");
@@ -118,7 +119,7 @@ public class VcsManager {
      */
     public void checkoutToNewBranch(@NotNull String newBranchName) throws IOException, BranchAlreadyExistsException {
         logger.debug("Creating branch " + newBranchName + "...");
-        String currentHead = repository.getCurrentHead();
+        String currentHead = repository.getCurrentHead().readLine();
         if (currentHead.startsWith(REFERENCE_PREFIX)) {
             Reference currentReference = new Reference(repository);
             String commitHash = currentReference.getCommitHash();
@@ -146,8 +147,8 @@ public class VcsManager {
         logger.debug("Checkout to " + revision);
         Reference currentReference = new Reference(repository);
         String commitHash = currentReference.getCommitHash();
-        Commit commit = new Commit(commitHash, repository);
-        VcsTree vcsTree = new VcsTree(commit.getTreeHash(), repository);
+        Commit commit = repository.getCommit(commitHash);
+        VcsTree vcsTree = repository.getTree(commit.getTreeHash());
         logger.debug("Clearing current commit...");
         cleanCurrentCommit(vcsTree);
 
@@ -196,8 +197,8 @@ public class VcsManager {
      */
     private void restoreCommit(@NotNull String commitHash) throws IOException, ClassNotFoundException {
         logger.debug("Restoring commit " + commitHash);
-        Commit commit = new Commit(commitHash, repository);
-        VcsTree vcsTree = new VcsTree(commit.getTreeHash(), repository);
+        Commit commit = repository.getCommit(commitHash);
+        VcsTree vcsTree = repository.getTree(commit.getTreeHash());
         repository.restoreTree(vcsTree);
     }
 
@@ -213,7 +214,7 @@ public class VcsManager {
                 throws NoBranchExistsException, IOException, CannotDeleteCurrentBranchException {
         logger.debug("Trying to delete branch " + branchName);
         if (repository.isBranchExists(branchName)) {
-            String head = repository.getCurrentHead();
+            String head = repository.getCurrentHead().readLine();
             String currentBranch = head.substring(REFERENCE_PREFIX.length());
             if (currentBranch.equals(branchName)) {
                 logger.error("Tried to delete current branch");
@@ -238,7 +239,7 @@ public class VcsManager {
         logger.debug("Creating vcs log");
         Reference reference = new Reference(repository);
         String currentCommitHash = reference.getCommitHash();
-        Commit currentCommit = new Commit(currentCommitHash, repository);
+        Commit currentCommit = repository.getCommit(currentCommitHash);
 
         HashSet<String> commitHashes = new HashSet<>();
         commitHashes.add(currentCommitHash);
@@ -264,7 +265,7 @@ public class VcsManager {
                      @NotNull Commit currentCommit) throws IOException, ClassNotFoundException {
         for (String commitHash : currentCommit.getParentCommits()) {
             if (!commitHashes.contains(commitHash)) {
-                Commit parentCommit = new Commit(commitHash, repository);
+                Commit parentCommit = repository.getCommit(commitHash);
                 commits.add(parentCommit);
                 commitHashes.add(commitHash);
                 dfs(commits, commitHashes, parentCommit);
@@ -282,13 +283,13 @@ public class VcsManager {
         logger.debug("Merge " + branchName + " into " + repository.getCurrentHead());
         Reference newReference = new Reference(branchName, repository);
         String commitHash = newReference.getCommitHash();
-        Commit commit = new Commit(commitHash, repository);
-        VcsTree branchVcsTree = new VcsTree(commit.getTreeHash(), repository);
+        Commit commit = repository.getCommit(commitHash);
+        VcsTree branchVcsTree = repository.getTree(commit.getTreeHash());
 
         Reference reference = new Reference(repository);
         String currentCommitHash = reference.getCommitHash();
-        Commit currentCommit = new Commit(currentCommitHash, repository);
-        VcsTree currentVcsTree = new VcsTree(currentCommit.getTreeHash(), repository);
+        Commit currentCommit = repository.getCommit(currentCommitHash);
+        VcsTree currentVcsTree = repository.getTree(currentCommit.getTreeHash());
 
         currentVcsTree.mergeWith(branchVcsTree);
         repository.createIndexFromTree(currentVcsTree);
@@ -354,6 +355,12 @@ public class VcsManager {
         }
     }
 
+    private @NotNull VcsTree getTreeOfCurrentCommit() throws IOException, ClassNotFoundException {
+        Reference reference = new Reference(repository);
+        Commit commit = repository.getCommit(reference.getCommitHash());
+        return repository.getTree(commit.getHash());
+    }
+
     /**
      * Получение файлов, который находятся под контролем системы версий.
      * @return множество путей к файлам.
@@ -364,8 +371,7 @@ public class VcsManager {
     private @NotNull HashSet<String> getTrackedFiles() throws IOException, ClassNotFoundException,
                                                               NotRegularFileException {
         VcsTree currentVcsTree = repository.createTreeFromIndex();
-        VcsTree commitVcsTree = new VcsTree(new Commit(new Reference(repository).getCommitHash(),
-                repository).getTreeHash(), repository);
+        VcsTree commitVcsTree = getTreeOfCurrentCommit();
 
         Set<String> currentFileNames = getFilesNames(currentVcsTree);
         Set<String> commitVcsTreeFiles = getFilesNames(commitVcsTree);
@@ -417,8 +423,7 @@ public class VcsManager {
     private void getStatusFiles() throws IOException, ClassNotFoundException, NotRegularFileException {
         logger.debug("Getting status information");
         VcsTree currentVcsTree = repository.createTreeFromIndex();
-        VcsTree commitVcsTree = new VcsTree(new Commit(new Reference(repository).getCommitHash(),
-                repository).getTreeHash(), repository);
+        VcsTree commitVcsTree = getTreeOfCurrentCommit();
 
         Map<String, String> currentMap = getPathWithHashes(currentVcsTree);
         Map<String, String> commitMap = getPathWithHashes(commitVcsTree);
@@ -501,8 +506,7 @@ public class VcsManager {
      */
     public void reset(@NotNull Path pathToFile) throws IOException, ClassNotFoundException {
         logger.debug("Reseting file " + pathToFile);
-        VcsTree commitVcsTree = new VcsTree(new Commit(new Reference(repository).getCommitHash(),
-                repository).getTreeHash(), repository);
+        VcsTree commitVcsTree = getTreeOfCurrentCommit();
 
         String fileHash = commitVcsTree.getFileHash(pathToFile);
         if (fileHash != null) {
@@ -521,8 +525,8 @@ public class VcsManager {
      * @throws NotRegularFileException исключение, если ожидали файл, а получили директорию.
      * @throws ClassNotFoundException исключение, если невозможно интерпретировать данные.
      */
-    public void clean(@NotNull HashSet<String> untrackedFiles) throws ClassNotFoundException, NotRegularFileException,
+    public void clean() throws ClassNotFoundException, NotRegularFileException,
             NoRootDirectoryExistsException, IOException {
-        repository.clean(untrackedFiles);
+        repository.clean(getUntrackedFiles());
     }
 }

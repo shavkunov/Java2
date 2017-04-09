@@ -4,6 +4,7 @@ import org.apache.commons.io.FileUtils;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import ru.spbau.shavkunov.vcs.exceptions.BranchAlreadyExistsException;
 import ru.spbau.shavkunov.vcs.exceptions.NoRootDirectoryExistsException;
 import ru.spbau.shavkunov.vcs.exceptions.NotRegularFileException;
 
@@ -12,9 +13,7 @@ import java.nio.file.Files;
 import java.nio.file.NotDirectoryException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
+import java.util.*;
 
 import static ru.spbau.shavkunov.vcs.Constants.*;
 import static ru.spbau.shavkunov.vcs.Constants.DEFAULT_BRANCH_NAME;
@@ -51,6 +50,35 @@ public class Filesystem implements Datastore {
     }
 
     @Override
+    public void createNewBranch(@NotNull String branchName, @NotNull String commitHash)
+                                            throws BranchAlreadyExistsException, IOException {
+        if (isBranchExists(branchName)) {
+            throw new BranchAlreadyExistsException();
+        }
+
+        Path branchPath = getReferencesPath().resolve(branchName);
+        Files.write(branchPath, commitHash.getBytes());
+        Files.write(getHeadPath(), (REFERENCE_PREFIX + branchName).getBytes());
+    }
+
+    @Override
+    public void deleteBranch(@NotNull String branchName) throws IOException {
+        Files.delete(getReferencesPath().resolve(branchName));
+    }
+
+    @Override
+    public boolean isBranchExists(@NotNull String branchName) {
+        Path branchPath = getReferencesPath().resolve(branchName);
+        return branchPath.toFile().exists();
+    }
+
+    @Override
+    public boolean isCommitExists(@NotNull String commitHash) {
+        return getObjectsPath().resolve(commitHash).toFile().exists();
+    }
+
+    @NotNull
+    @Override
     public Path getRootDirectory() {
         return rootDirectory;
     }
@@ -60,7 +88,16 @@ public class Filesystem implements Datastore {
     }
 
     @Override
-    public void writeContent(Path pathToFile, byte[] content) {
+    public void writeHead(@NotNull String revision) throws IOException {
+        if (getReferencesPath().resolve(revision).toFile().exists()) {
+            Files.write(getHeadPath(), (REFERENCE_PREFIX + revision).getBytes());
+        } else {
+            Files.write(getHeadPath(), revision.getBytes());
+        }
+    }
+
+    @Override
+    public void writeContent(@NotNull Path pathToFile, @NotNull byte[] content) {
 
     }
 
@@ -70,10 +107,64 @@ public class Filesystem implements Datastore {
     }
 
     @Override
-    public void storeObject(VcsObjectWithHash object) {
+    public void storeObject(@NotNull VcsObjectWithHash object) {
 
     }
 
+    @Override
+    public void storeReference(@NotNull String name, @NotNull String commitHash) throws IOException {
+        Path pathToRef = getReferencesPath().resolve(name);
+        if (!pathToRef.toFile().exists()) {
+            pathToRef.toFile().createNewFile();
+        }
+
+        Files.write(pathToRef, commitHash.getBytes());
+    }
+
+    /**
+     * Получение коммита по хешу.
+     * @param commitHash хеш коммита.
+     * @throws IOException исключение, если возникли проблемы с чтением файлов.
+     * @throws ClassNotFoundException исключение, если не удалось интерпретировать данные(хеш не коммита)
+     */
+    @NotNull
+    @Override
+    public Commit getCommitByHash(@NotNull String commitHash) throws IOException, ClassNotFoundException {
+        byte[] content = Files.readAllBytes(getObjectsPath().resolve(commitHash));
+
+        return new Commit(content, commitHash);
+    }
+
+    @Override
+    public @NotNull VcsTree getTreeByHash(@NotNull String treeHash) throws IOException, ClassNotFoundException {
+        byte[] content = Files.readAllBytes(getObjectsPath().resolve(treeHash));
+
+        return new VcsTree(treeHash, content);
+    }
+
+    @NotNull
+    @Override
+    public String getReferenceCommitHash(@NotNull String referenceName) throws IOException {
+        return getFirstLine(getReferencesPath().resolve(referenceName));
+    }
+
+    /**
+     * Получение первой строчки файла.
+     * @param pathToFile путь к файлу.
+     * @return первая строчка данного файла.
+     * @throws IOException исключение, если возникли проблемы с чтением файлов.
+     */
+    public static String getFirstLine(@NotNull Path pathToFile) throws IOException {
+        BufferedReader reader = new BufferedReader(new FileReader(pathToFile.toFile()));
+        String line = reader.readLine();
+        if (line == null) {
+            line = "";
+        }
+
+        return line;
+    }
+
+    @NotNull
     @Override
     public FilesTree getFilesTree(@NotNull HashSet<String> excludeFiles) {
         return null;
@@ -83,8 +174,7 @@ public class Filesystem implements Datastore {
      * Получение ссылки на файл index.
      * @return путь к файлу index.
      */
-    @Override
-    public @NotNull Path getIndexPath() {
+    private @NotNull Path getIndexPath() {
         return rootDirectory.resolve(VCS_FOLDER).resolve(INDEX_FILE);
     }
 
@@ -92,8 +182,7 @@ public class Filesystem implements Datastore {
      * Получение ссылки на папку, где хранятся все объекты.
      * @return путь к папке объектов.
      */
-    @Override
-    public @NotNull Path getObjectsPath() {
+    private @NotNull Path getObjectsPath() {
         return rootDirectory.resolve(VCS_FOLDER).resolve(OBJECTS_FOLDER);
     }
 
@@ -101,8 +190,7 @@ public class Filesystem implements Datastore {
      * Получение ссылки на папку, где хранятся все ветки.
      * @return путь к папке ссылок.
      */
-    @Override
-    public @NotNull Path getReferencesPath() {
+    private @NotNull Path getReferencesPath() {
         return rootDirectory.resolve(VCS_FOLDER).resolve(REFERENCES_FOLDER);
     }
 
@@ -111,7 +199,13 @@ public class Filesystem implements Datastore {
      * @return путь к файлу head.
      */
     @Override
-    public @NotNull Path getHead() {
+    public @NotNull BufferedReader getHead() throws FileNotFoundException {
+        BufferedReader reader = new BufferedReader(new FileReader(getHeadPath().toFile()));
+
+        return reader;
+    }
+
+    private @NotNull Path getHeadPath() {
         return rootDirectory.resolve(VCS_FOLDER).resolve(HEAD);
     }
 

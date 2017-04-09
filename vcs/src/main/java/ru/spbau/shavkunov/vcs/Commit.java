@@ -4,8 +4,6 @@ import org.apache.commons.codec.digest.DigestUtils;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.*;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -45,11 +43,10 @@ public class Commit extends VcsObjectWithHash {
      * @param message сообщение коммита.
      * @param treeHash хеш дерева репозитория.
      * @param parentCommits коммиты предки.
-     * @param repository репозиторий, где создается коммит.
      * @throws IOException исключение, если возникли проблемы с чтением файлов.
      */
     public Commit(@NotNull String author, @NotNull String message, @NotNull String treeHash,
-                  @NotNull ArrayList<String> parentCommits, @NotNull Repository repository)
+                  @NotNull ArrayList<String> parentCommits)
                  throws IOException {
         this.date = new Date();
         this.author = author;
@@ -59,19 +56,16 @@ public class Commit extends VcsObjectWithHash {
 
         byte[] content = getContent();
         hash = DigestUtils.sha1Hex(content);
-        Files.write(repository.getObjectsPath().resolve(hash), content);
     }
 
     /**
      * Получение коммита по хешу.
+     * @param content сериализованная информация коммита.
      * @param commitHash хеш коммита.
-     * @param repository репозиторий, где нужно получить коммит.
      * @throws IOException исключение, если возникли проблемы с чтением файлов.
      * @throws ClassNotFoundException исключение, если не удалось интерпретировать данные(хеш не коммита)
      */
-    public Commit(@NotNull String commitHash, @NotNull Repository repository) throws IOException, ClassNotFoundException {
-        byte[] content = Files.readAllBytes(repository.getObjectsPath().resolve(commitHash));
-
+    public Commit(@NotNull byte[] content, @NotNull String commitHash) throws IOException, ClassNotFoundException {
         try (ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(content);
              ObjectInputStream input = new ObjectInputStream(byteArrayInputStream)) {
 
@@ -101,7 +95,8 @@ public class Commit extends VcsObjectWithHash {
         return treeHash;
     }
 
-    private @NotNull byte[] getContent() throws IOException {
+    @Override
+    public @NotNull byte[] getContent() throws IOException {
         byte[] res;
         try (ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
              ObjectOutputStream output = new ObjectOutputStream(byteArrayOutputStream)) {

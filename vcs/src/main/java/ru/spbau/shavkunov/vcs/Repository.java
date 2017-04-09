@@ -9,7 +9,6 @@ import ru.spbau.shavkunov.vcs.exceptions.NoRootDirectoryExistsException;
 import ru.spbau.shavkunov.vcs.exceptions.NotRegularFileException;
 
 import java.io.BufferedReader;
-import java.io.FileReader;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.NotDirectoryException;
@@ -116,7 +115,8 @@ public class Repository {
         ArrayList<Path> pathsInTree = new ArrayList<>(trees.keySet());
         Collections.reverse(pathsInTree);
         for (Path path : pathsInTree) {
-            trees.get(path).computeHash(data);
+            trees.get(path).computeHash();
+            storeObject(trees.get(path));
             logger.debug(trees.get(path).getHash());
         }
         VcsTree resVcsTree = trees.get(rootPath);
@@ -130,10 +130,8 @@ public class Repository {
      * @return содержимое файла head.
      * @throws IOException исключение, если возникли проблемы с чтением файла.
      */
-    public @NotNull String getCurrentHead() throws IOException {
-        BufferedReader reader = new BufferedReader(new FileReader(data.getHead().toFile()));
-
-        return reader.readLine();
+    public @NotNull BufferedReader getCurrentHead() throws IOException {
+        return data.getHead();
     }
 
     /**
@@ -142,11 +140,7 @@ public class Repository {
      * @throws IOException исключение, если возникли проблемы с чтением файла.
      */
     public void writeHead(@NotNull String revision) throws IOException {
-        if (data.getReferencesPath().resolve(revision).toFile().exists()) {
-            Files.write(data.getHead(), (REFERENCE_PREFIX + revision).getBytes());
-        } else {
-            Files.write(data.getHead(), revision.getBytes());
-        }
+        data.writeHead(revision);
     }
 
     /**
@@ -180,7 +174,7 @@ public class Repository {
      * @throws IOException исключение, если возникли проблемы с чтением файла.
      */
     public void deleteBranch(@NotNull String branchName) throws IOException {
-        Files.delete(data.getReferencesPath().resolve(branchName));
+        data.deleteBranch(branchName);
     }
 
     /**
@@ -192,13 +186,8 @@ public class Repository {
      */
     public void createNewBranch(@NotNull String branchName, @NotNull String commitHash)
                                 throws BranchAlreadyExistsException, IOException {
-        if (isBranchExists(branchName)) {
-            throw new BranchAlreadyExistsException();
-        }
 
-        Path branchPath = data.getReferencesPath().resolve(branchName);
-        Files.write(branchPath, commitHash.getBytes());
-        Files.write(data.getHead(), (REFERENCE_PREFIX + branchName).getBytes());
+        data.createNewBranch(branchName, commitHash);
     }
 
     /**
@@ -207,8 +196,7 @@ public class Repository {
      * @return true, если ветка с данным именем существует, false иначе.
      */
     public boolean isBranchExists(@NotNull String branchName) {
-        Path branchPath = data.getReferencesPath().resolve(branchName);
-        return branchPath.toFile().exists();
+        return data.isBranchExists(branchName);
     }
 
     /**
@@ -217,23 +205,7 @@ public class Repository {
      * @return true, если коммит с таким хешом существует, иначе false.
      */
     public boolean isCommitExists(@NotNull String commitHash) {
-        return data.getObjectsPath().resolve(commitHash).toFile().exists();
-    }
-
-    /**
-     * Получение первой строчки файла.
-     * @param pathToFile путь к файлу.
-     * @return первая строчка данного файла.
-     * @throws IOException исключение, если возникли проблемы с чтением файлов.
-     */
-    public static String getFirstLine(@NotNull Path pathToFile) throws IOException {
-        BufferedReader reader = new BufferedReader(new FileReader(pathToFile.toFile()));
-        String line = reader.readLine();
-        if (line == null) {
-            line = "";
-        }
-
-        return line;
+        return data.isCommitExists(commitHash);
     }
 
     /**
@@ -246,6 +218,10 @@ public class Repository {
         data.restoreFile(pathToFile, fileHash);
     }
 
+    public void writeContent(@NotNull Path pathToFile, byte[] content) {
+        data.writeContent(pathToFile, content);
+    }
+
     /**
      * Добавление файла в репозиторий.
      * @param blob добавляемый файл.
@@ -254,6 +230,26 @@ public class Repository {
     public void storeFile(@NotNull Blob blob) throws IOException {
         addFileToIndex(blob.getPathToFile(), blob.getHash());
         data.storeObject(blob);
+    }
+
+    public void storeObject(@NotNull VcsObjectWithHash object) {
+        data.storeObject(object);
+    }
+
+    public void storeReferenceCommit(@NotNull String name, @NotNull String commitHash) throws IOException {
+        data.storeReference(name, commitHash);
+    }
+
+    public Commit getCommit(@NotNull String hash) throws IOException, ClassNotFoundException {
+        return data.getCommitByHash(hash);
+    }
+
+    public VcsTree getTree(@NotNull String hash) throws IOException, ClassNotFoundException {
+        return data.getTreeByHash(hash);
+    }
+
+    public String getReferenceCommitHash(String referenceName) throws IOException {
+        return data.getReferenceCommitHash(referenceName);
     }
 
     public void restoreTree(@NotNull VcsTree tree) throws IOException {

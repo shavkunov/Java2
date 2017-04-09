@@ -5,16 +5,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 
-import static ru.spbau.shavkunov.vcs.Constants.*;
+import static ru.spbau.shavkunov.vcs.Constants.REFERENCE_PREFIX;
 
 /**
  * Класс, отвечающий за представление объекта reference(ссылка) в системе контроля версий.
  * Ссылка указывает на текущую ветку и хеш коммита, отвечающий за текущее состояние репозитория.
  */
-public class Reference implements VcsObject {
+public class Reference {
     private static final Logger logger = LoggerFactory.getLogger(VcsManager.class);
 
     /**
@@ -27,11 +25,6 @@ public class Reference implements VcsObject {
      */
     private @NotNull String commitHash;
 
-    @Override
-    public @NotNull Path getPathToObject(@NotNull Repository repository) {
-        return repository.getReferencesPath().resolve(name);
-    }
-
     /**
      * Создание объекта ссылки репозитория. Если в head лежит название ветки, то это будет стандартной ссылкой, иначе
      * ссылке будет хранится только хеш текущего коммита.
@@ -39,10 +32,10 @@ public class Reference implements VcsObject {
      * @throws IOException исключение, если возникли проблемы с чтением файла.
      */
     public Reference(@NotNull Repository repository) throws IOException {
-        String head = repository.getCurrentHead();
+        String head = repository.getCurrentHead().readLine();
         if (head.startsWith(REFERENCE_PREFIX)) {
             name = head.substring(REFERENCE_PREFIX.length());
-            commitHash = Repository.getFirstLine(repository.getReferencesPath().resolve(name));
+            commitHash = repository.getReferenceCommitHash(name);
         } else {
             name = "Commit hash";
             commitHash = head;
@@ -59,7 +52,7 @@ public class Reference implements VcsObject {
      */
     public Reference(@NotNull String name, @NotNull Repository repository) throws IOException {
         this.name = name;
-        commitHash = Repository.getFirstLine(repository.getReferencesPath().resolve(name));
+        commitHash = repository.getReferenceCommitHash(name);
     }
 
     public @NotNull String getCommitHash() {
@@ -73,6 +66,7 @@ public class Reference implements VcsObject {
      * @throws IOException исключение, если возникли проблемы с чтением файла.
      */
     public void refreshCommitHash(@NotNull String newCommitHash, @NotNull Repository repository) throws IOException {
-        Files.write(getPathToObject(repository), newCommitHash.getBytes());
+        repository.storeReferenceCommit(name, newCommitHash);
+        commitHash = newCommitHash;
     }
 }

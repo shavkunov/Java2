@@ -115,7 +115,7 @@ public class Main {
         }
 
         try {
-            new VcsManager(rootPath).initRepositoryFiles(rootPath);
+            new VcsManager(rootPath).initRepositoryFiles();
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -271,7 +271,7 @@ public class Main {
     private static void handleBranch(CommandLine cmd) {
         try {
             Repository repository = Repository.getRepository(rootPath);
-            String currentHead = repository.getCurrentHead();
+            String currentHead = repository.getCurrentHead().readLine();
             if (currentHead.startsWith(REFERENCE_PREFIX)) {
                 System.out.println("Current branch name : " + currentHead.substring(REFERENCE_PREFIX.length()));
             } else {

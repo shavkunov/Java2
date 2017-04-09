@@ -4,7 +4,6 @@ import org.apache.commons.codec.digest.DigestUtils;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.*;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -53,13 +52,10 @@ public class VcsTree extends VcsObjectWithHash implements Tree, Serializable, Co
     /**
      * Получить дерево по его хешу.
      * @param treeHash хеш дерева.
-     * @param repository репозиторий, где лежит hash дерева.
      * @throws IOException исключение, если возникли проблемы с чтением файлов.
      * @throws ClassNotFoundException исключение, если невозможно интерпретировать данные.
      */
-    public VcsTree(@NotNull String treeHash, @NotNull Repository repository) throws IOException, ClassNotFoundException {
-        byte[] content = Files.readAllBytes(repository.getObjectsPath().resolve(treeHash));
-
+    public VcsTree(@NotNull String treeHash, @NotNull byte[] content) throws IOException, ClassNotFoundException {
         try (ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(content);
              ObjectInputStream input = new ObjectInputStream(byteArrayInputStream)) {
 
@@ -71,7 +67,8 @@ public class VcsTree extends VcsObjectWithHash implements Tree, Serializable, Co
         hash = treeHash;
     }
 
-    private @NotNull byte[] getContent() throws IOException {
+    @Override
+    public @NotNull byte[] getContent() throws IOException {
         byte[] content;
         blobFiles.sort(ObjectWithName::compareTo);
         vcsTreeFiles.sort(VcsTree::compareTo);
@@ -91,13 +88,11 @@ public class VcsTree extends VcsObjectWithHash implements Tree, Serializable, Co
 
     /**
      * Вычисление хеша дерева.
-     * @param data инстанс класса, который знает куда записывать.
      * @throws IOException исключение, если возникли проблемы с чтением файлов.
      */
-    public void computeHash(Datastore data) throws IOException {
+    public void computeHash() throws IOException {
         byte[] content = getContent();
         hash = DigestUtils.sha1Hex(content);
-        data.storeObject(hash, content);
     }
 
     /**
