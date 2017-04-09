@@ -122,9 +122,4 @@ public class Commit extends VcsObjectWithHash {
     public @NotNull List<String> getParentCommits() {
         return parentCommits;
     }
-
-    @Override
-    public @NotNull Path getPathToObject(@NotNull Repository repository) {
-        return repository.getObjectsPath().resolve(hash);
-    }
 }

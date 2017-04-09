@@ -1,86 +1,128 @@
 package ru.spbau.shavkunov.vcs;
 
 import org.jetbrains.annotations.NotNull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import ru.spbau.shavkunov.vcs.exceptions.BranchAlreadyExistsException;
 import ru.spbau.shavkunov.vcs.exceptions.NoRepositoryException;
+import ru.spbau.shavkunov.vcs.exceptions.NoRootDirectoryExistsException;
+import ru.spbau.shavkunov.vcs.exceptions.NotRegularFileException;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.NotDirectoryException;
 import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.*;
 
-import static ru.spbau.shavkunov.vcs.Constants.*;
+import static ru.spbau.shavkunov.vcs.Constants.REFERENCE_PREFIX;
+import static ru.spbau.shavkunov.vcs.Constants.VCS_FOLDER;
 
 /**
  * Класс, осуществляющий всю внутреннюю работу с репозиторием.
  */
 public class Repository {
     /**
-     * Корневая директория, где расположен репозиторий.
+     * Логгер этого класса.
      */
-    private @NotNull Path rootDirectory;
+    @NotNull
+    private static final Logger logger = LoggerFactory.getLogger(Repository.class);
 
-    public @NotNull Path getRootDirectory() {
-        return rootDirectory;
+    private @NotNull Datastore data;
+
+    /**
+     * Представление файла индекса -- множество путей файлов и их хешей.
+     */
+    private @NotNull Map<Path, String> index;
+
+    public void initResources() throws IOException {
+        data.initResources();
     }
 
     /**
-     * Инициализация репозитория.
-     * @param path путь к папке, где будет создан репозиторий.
-     * @throws IOException исключения, могут возникнуть в случае если невозможно создать папку
-     * или переданный путь это не папка.
+     * Добавить файл в index.
+     * @param pathToFile путь к файлу.
+     * @param hash хеш добавляемого файла.
      */
-    public static void initRepository(@NotNull Path path) throws IOException {
-        if (!Files.isDirectory(path)) {
-            throw new NotDirectoryException(path.toString());
+    public void addFileToIndex(@NotNull Path pathToFile, @NotNull String hash) throws IOException {
+        logger.debug("Adding file " + pathToFile + " to index");
+        index.put(pathToFile, hash);
+        data.updateIndex(index);
+    }
+
+    /**
+     * Удалить файл из index.
+     * @param pathToFile путь к файлу.
+     */
+    public void removeFileFromIndex(@NotNull Path pathToFile) throws IOException, NotRegularFileException {
+        logger.debug("Adding file " + pathToFile + " from index");
+
+        pathToFile = pathToFile.normalize();
+        if (Files.isDirectory(pathToFile)) {
+            throw new NotRegularFileException();
         }
 
-        Path rootDir = path.resolve(VCS_FOLDER).normalize();
-
-        Files.createDirectory(rootDir);
-        Files.createDirectory(rootDir.resolve(OBJECTS_FOLDER));
-        Files.createDirectory(rootDir.resolve(REFERENCES_FOLDER));
-        Files.createFile(rootDir.resolve(REFERENCES_FOLDER).resolve(DEFAULT_BRANCH_NAME));
-        Files.createFile(rootDir.resolve(INDEX_FILE));
-
-        Path pathToHead = rootDir.resolve(HEAD);
-        Files.createFile(pathToHead);
-        FileOutputStream fileOutputStream = new FileOutputStream(pathToHead.toFile());
-        fileOutputStream.write((REFERENCE_PREFIX + DEFAULT_BRANCH_NAME).getBytes());
-        fileOutputStream.flush();
-        fileOutputStream.close();
+        pathToFile.toFile().delete();
+        index.remove(pathToFile);
+        data.updateIndex(index);
     }
 
     /**
-     * Получение ссылки на файл index.
-     * @return путь к файлу index.
+     * Создание дерева структуры файлов и папок репозитория.
+     * @return дерево с структурой папок.
+     * @throws IOException исключение, если возникли проблемы с чтением файла.
+     * @throws NotRegularFileException исключение, если вдруг объект Blob создается не от файла.
      */
-    public @NotNull Path getIndexPath() {
-        return rootDirectory.resolve(VCS_FOLDER).resolve(INDEX_FILE);
-    }
+    public @NotNull VcsTree createTreeFromIndex() throws IOException, NotRegularFileException {
+        logger.debug("Start creating tree from index");
+        TreeMap<Path, VcsTree> trees = new TreeMap<>();
+        Path rootPath = Paths.get(".").normalize();
+        trees.put(rootPath, new VcsTree(rootPath));
+        for (Path pathToFile : index.keySet()) {
+            Path absolutePrefix = rootPath;
+            for (Path prefix : pathToFile) {
+                logger.debug(prefix.toString());
+                absolutePrefix = absolutePrefix.resolve(prefix);
+                VcsTree selectedVcsTree;
+                if (absolutePrefix.equals(pathToFile)) {
+                    Blob blob = new Blob(pathToFile);
 
-    /**
-     * Получение ссылки на папку, где хранятся все объекты.
-     * @return путь к папке объектов.
-     */
-    public @NotNull Path getObjectsPath() {
-        return rootDirectory.resolve(VCS_FOLDER).resolve(OBJECTS_FOLDER);
-    }
+                    if (pathToFile.getParent() == null) {
+                        selectedVcsTree = trees.get(rootPath);
+                    } else {
+                        selectedVcsTree = trees.get(pathToFile.getParent());
+                    }
 
-    /**
-     * Получение ссылки на папку, где хранятся все ветки.
-     * @return путь к папке ссылок.
-     */
-    public @NotNull Path getReferencesPath() {
-        return rootDirectory.resolve(VCS_FOLDER).resolve(REFERENCES_FOLDER);
-    }
+                    selectedVcsTree.addBlob(blob, pathToFile.toString());
+                } else {
+                    if (!trees.containsKey(absolutePrefix)) {
+                        VcsTree prefixVcsTree = new VcsTree(prefix);
+                        trees.put(absolutePrefix, prefixVcsTree);
+                        if (absolutePrefix.getParent() != null) {
+                            selectedVcsTree = trees.get(absolutePrefix.getParent());
+                        } else {
+                            selectedVcsTree = trees.get(rootPath);
+                        }
 
-    /**
-     * Получение ссылки на head файл.
-     * @return путь к файлу head.
-     */
-    private @NotNull Path getHead() {
-        return rootDirectory.resolve(VCS_FOLDER).resolve(HEAD);
+                        selectedVcsTree.addChild(prefixVcsTree);
+                    }
+                }
+            }
+        }
+
+        logger.debug("Computing tree hashes:");
+        ArrayList<Path> pathsInTree = new ArrayList<>(trees.keySet());
+        Collections.reverse(pathsInTree);
+        for (Path path : pathsInTree) {
+            trees.get(path).computeHash(data);
+            logger.debug(trees.get(path).getHash());
+        }
+        VcsTree resVcsTree = trees.get(rootPath);
+
+        logger.debug("Tree with hash " + resVcsTree.getHash() + " from index was created");
+        return resVcsTree;
     }
 
     /**
@@ -89,7 +131,7 @@ public class Repository {
      * @throws IOException исключение, если возникли проблемы с чтением файла.
      */
     public @NotNull String getCurrentHead() throws IOException {
-        BufferedReader reader = new BufferedReader(new FileReader(getHead().toFile()));
+        BufferedReader reader = new BufferedReader(new FileReader(data.getHead().toFile()));
 
         return reader.readLine();
     }
@@ -100,10 +142,10 @@ public class Repository {
      * @throws IOException исключение, если возникли проблемы с чтением файла.
      */
     public void writeHead(@NotNull String revision) throws IOException {
-        if (getReferencesPath().resolve(revision).toFile().exists()) {
-            Files.write(getHead(), (REFERENCE_PREFIX + revision).getBytes());
+        if (data.getReferencesPath().resolve(revision).toFile().exists()) {
+            Files.write(data.getHead(), (REFERENCE_PREFIX + revision).getBytes());
         } else {
-            Files.write(getHead(), revision.getBytes());
+            Files.write(data.getHead(), revision.getBytes());
         }
     }
 
@@ -127,8 +169,9 @@ public class Repository {
         return new Repository(path);
     }
 
-    public Repository(@NotNull Path rootDirectory) {
-        this.rootDirectory = rootDirectory;
+    public Repository(@NotNull Path rootDirectory) throws IOException {
+        data = new Filesystem(rootDirectory);
+        index = data.readIndex();
     }
 
     /**
@@ -137,7 +180,7 @@ public class Repository {
      * @throws IOException исключение, если возникли проблемы с чтением файла.
      */
     public void deleteBranch(@NotNull String branchName) throws IOException {
-        Files.delete(getReferencesPath().resolve(branchName));
+        Files.delete(data.getReferencesPath().resolve(branchName));
     }
 
     /**
@@ -153,9 +196,9 @@ public class Repository {
             throw new BranchAlreadyExistsException();
         }
 
-        Path branchPath = getReferencesPath().resolve(branchName);
+        Path branchPath = data.getReferencesPath().resolve(branchName);
         Files.write(branchPath, commitHash.getBytes());
-        Files.write(getHead(), (REFERENCE_PREFIX + branchName).getBytes());
+        Files.write(data.getHead(), (REFERENCE_PREFIX + branchName).getBytes());
     }
 
     /**
@@ -164,7 +207,7 @@ public class Repository {
      * @return true, если ветка с данным именем существует, false иначе.
      */
     public boolean isBranchExists(@NotNull String branchName) {
-        Path branchPath = getReferencesPath().resolve(branchName);
+        Path branchPath = data.getReferencesPath().resolve(branchName);
         return branchPath.toFile().exists();
     }
 
@@ -174,7 +217,7 @@ public class Repository {
      * @return true, если коммит с таким хешом существует, иначе false.
      */
     public boolean isCommitExists(@NotNull String commitHash) {
-        return getObjectsPath().resolve(commitHash).toFile().exists();
+        return data.getObjectsPath().resolve(commitHash).toFile().exists();
     }
 
     /**
@@ -183,7 +226,7 @@ public class Repository {
      * @return первая строчка данного файла.
      * @throws IOException исключение, если возникли проблемы с чтением файлов.
      */
-    public static String getFirstLine(Path pathToFile) throws IOException {
+    public static String getFirstLine(@NotNull Path pathToFile) throws IOException {
         BufferedReader reader = new BufferedReader(new FileReader(pathToFile.toFile()));
         String line = reader.readLine();
         if (line == null) {
@@ -199,7 +242,48 @@ public class Repository {
      * @param fileHash хеш файла.
      * @throws IOException исключение, если возникли проблемы с чтением файлов.
      */
-    public void restoreFile(Path pathToFile, String fileHash) throws IOException {
-        Files.write(pathToFile, Files.readAllBytes(getObjectsPath().resolve(fileHash)));
+    public void restoreFile(@NotNull Path pathToFile, @NotNull String fileHash) throws IOException {
+        data.restoreFile(pathToFile, fileHash);
+    }
+
+    /**
+     * Добавление файла в репозиторий.
+     * @param blob добавляемый файл.
+     * @throws IOException
+     */
+    public void storeFile(@NotNull Blob blob) throws IOException {
+        addFileToIndex(blob.getPathToFile(), blob.getHash());
+        data.storeObject(blob);
+    }
+
+    public void restoreTree(@NotNull VcsTree tree) throws IOException {
+        index = new HashMap<>();
+        data.addTree(tree, data.getRootDirectory());
+        data.updateIndex(index);
+    }
+
+    /**
+     * Создание файла index из дерева.
+     * @param vcsTree дерево файлов.
+     */
+    public void createIndexFromTree(@NotNull VcsTree vcsTree) {
+        logger.debug("Creating index from tree " + vcsTree.getHash());
+        index.clear();
+        HashSet<ObjectWithName<Blob>> files = vcsTree.getAllFiles();
+        for (ObjectWithName<Blob> file : files) {
+            Blob blob = file.getContent();
+            String filePath = file.getName();
+            String fileHash = blob.getHash();
+            index.put(Paths.get(filePath), fileHash);
+        }
+    }
+
+    public FilesTree getFilesTree(@NotNull HashSet<String> excludeFiles) {
+        return data.getFilesTree(excludeFiles);
+    }
+
+    public void clean(@NotNull HashSet<String> untrackedFiles) throws ClassNotFoundException, NotRegularFileException,
+                                                                NoRootDirectoryExistsException, IOException {
+        data.clean(untrackedFiles);
     }
 }

@@ -1,13 +1,12 @@
 package ru.spbau.shavkunov.vcs;
 
-import org.apache.commons.io.FileUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ru.spbau.shavkunov.vcs.exceptions.*;
 
-import java.io.*;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
@@ -33,11 +32,6 @@ public class VcsManager {
     private @NotNull Repository repository;
 
     /**
-     * Представление файла индекса -- множество путей файлов и их хешей.
-     */
-    private @NotNull Map<Path, String> index;
-
-    /**
      * Добавленные файлы.
      */
     private @Nullable ArrayList<String> stagedFiles;
@@ -52,81 +46,13 @@ public class VcsManager {
      */
     private @Nullable ArrayList<String> modifiedFiles;
 
-    /**
-     * Чтение файла index, отвечающий за состояние репозитория.
-     * @throws IOException исключение, если возникли проблемы с чтением файла.
-     */
-    private void readIndex() throws IOException {
-        logger.debug("Reading index file");
-
-        index = new HashMap<>();
-        BufferedReader reader = new BufferedReader(new FileReader(repository.getIndexPath().toFile()));
-        String line;
-        while ((line = reader.readLine()) != null) {
-            if (line.equals("")) {
-                continue;
-            }
-            String[] pathToFileWithHash = line.split(" ");
-            Path pathToFile = Paths.get(pathToFileWithHash[0]);
-            String hash = pathToFileWithHash[1];
-            index.put(pathToFile, hash);
-        }
-
-        logger.debug("Reading index is complete");
-    }
-
-    /**
-     * Сохранение изменений в файл index.
-     * @throws IOException исключение, если возникли проблемы с чтением файла.
-     */
-    private void updateIndex() throws IOException {
-        logger.debug("Updating index file");
-
-        FileWriter fileWriter = new FileWriter(repository.getIndexPath().toFile());
-        BufferedWriter bufferedWriter = new BufferedWriter(fileWriter);
-
-        for (Map.Entry<Path, String> entry : index.entrySet()) {
-            String line = entry.getKey().toString() + " " + entry.getValue();
-            bufferedWriter.write(line);
-            bufferedWriter.newLine();
-        }
-
-        bufferedWriter.flush();
-        bufferedWriter.close();
-
-        logger.debug("Updating index is complete");
-    }
-
-    public VcsManager(@NotNull Repository repository) throws IOException {
-        logger.debug("---------------------------Manager was created---------------------------");
-        this.repository = repository;
-        readIndex();
+    public void initRepositoryFiles() throws IOException {
+        repository.initResources();
     }
 
     public VcsManager(@NotNull Path pathToRepo) throws IOException {
+        logger.debug("---------------------------Manager was created---------------------------");
         this.repository = new Repository(pathToRepo);
-        readIndex();
-    }
-
-    /**
-     * Добавить файл в index.
-     * @param pathToFile путь к файлу.
-     * @param hash хеш добавляемого файла.
-     */
-    private void addFileToIndex(@NotNull Path pathToFile, @NotNull String hash) throws IOException {
-        logger.debug("Adding file " + pathToFile + " to index");
-        index.put(pathToFile, hash);
-        updateIndex();
-    }
-
-    /**
-     * Удалить файл из index.
-     * @param pathToFile путь к файлу.
-     */
-    private void removeFileFromIndex(@NotNull Path pathToFile) throws IOException {
-        logger.debug("Adding file " + pathToFile + " from index");
-        index.remove(pathToFile);
-        updateIndex();
     }
 
     /**
@@ -136,12 +62,7 @@ public class VcsManager {
      */
     public void removeFile(@NotNull Path pathToFile) throws NotRegularFileException, IOException {
         logger.debug("Removing file " + pathToFile);
-        if (Files.isDirectory(pathToFile)) {
-            throw new NotRegularFileException();
-        }
-
-        pathToFile.toFile().delete();
-        removeFileFromIndex(pathToFile.normalize());
+        repository.removeFileFromIndex(pathToFile);
     }
 
     /**
@@ -158,67 +79,10 @@ public class VcsManager {
         }
 
         Path normalizedPath = pathToFile.normalize();
-        Blob blob = new Blob(normalizedPath, repository);
-        String hash = blob.getHash();
-        addFileToIndex(normalizedPath, hash);
+        Blob blob = new Blob(normalizedPath);
+        repository.storeFile(blob);
 
-        return hash;
-    }
-
-    /**
-     * Создание дерева структуры файлов и папок репозитория.
-     * @return дерево с структурой папок.
-     * @throws IOException исключение, если возникли проблемы с чтением файла.
-     * @throws NotRegularFileException исключение, если вдруг объект Blob создается не от файла.
-     */
-    public @NotNull VcsTree createTreeFromIndex() throws IOException, NotRegularFileException {
-        logger.debug("Start creating tree from index");
-        TreeMap<Path, VcsTree> trees = new TreeMap<>();
-        Path rootPath = Paths.get(".").normalize();
-        trees.put(rootPath, new VcsTree(rootPath));
-        for (Path pathToFile : index.keySet()) {
-            Path absolutePrefix = rootPath;
-            for (Path prefix : pathToFile) {
-                logger.debug(prefix.toString());
-                absolutePrefix = absolutePrefix.resolve(prefix);
-                VcsTree selectedVcsTree;
-                if (absolutePrefix.equals(pathToFile)) {
-                    Blob blob = new Blob(pathToFile, repository);
-
-                    if (pathToFile.getParent() == null) {
-                        selectedVcsTree = trees.get(rootPath);
-                    } else {
-                        selectedVcsTree = trees.get(pathToFile.getParent());
-                    }
-
-                    selectedVcsTree.addBlob(blob, pathToFile.toString());
-                } else {
-                    if (!trees.containsKey(absolutePrefix)) {
-                        VcsTree prefixVcsTree = new VcsTree(prefix);
-                        trees.put(absolutePrefix, prefixVcsTree);
-                        if (absolutePrefix.getParent() != null) {
-                            selectedVcsTree = trees.get(absolutePrefix.getParent());
-                        } else {
-                            selectedVcsTree = trees.get(rootPath);
-                        }
-
-                        selectedVcsTree.addChild(prefixVcsTree);
-                    }
-                }
-            }
-        }
-
-        logger.debug("Computing tree hashes:");
-        ArrayList<Path> pathsInTree = new ArrayList<>(trees.keySet());
-        Collections.reverse(pathsInTree);
-        for (Path path : pathsInTree) {
-            trees.get(path).computeHash(repository);
-            logger.debug(trees.get(path).getHash());
-        }
-        VcsTree resVcsTree = trees.get(rootPath);
-
-        logger.debug("Tree with hash " + resVcsTree.getHash() + " from index was created");
-        return resVcsTree;
+        return blob.getHash();
     }
 
     /**
@@ -231,7 +95,7 @@ public class VcsManager {
     public void commitChanges(@NotNull String author, @NotNull String message)
                               throws NotRegularFileException, IOException {
         logger.debug("Commiting...");
-        VcsTree vcsTree = createTreeFromIndex();
+        VcsTree vcsTree = repository.createTreeFromIndex();
         logger.debug("Created tree : " + vcsTree.getHash());
         Reference ref = new Reference(repository);
         ArrayList<String> parentCommits;
@@ -334,33 +198,7 @@ public class VcsManager {
         logger.debug("Restoring commit " + commitHash);
         Commit commit = new Commit(commitHash, repository);
         VcsTree vcsTree = new VcsTree(commit.getTreeHash(), repository);
-        index = new HashMap<>();
-        addTree(vcsTree, Paths.get("."));
-        updateIndex();
-    }
-
-    /**
-     * Добавление в корневую папку дополнительную структуру файлов.
-     * @param vcsTree в этом объекте хранится вся структура файлов и папок.
-     * @param root корневой путь, куда нужно добавить дерево
-     * @throws IOException исключение, если возникли проблемы с чтением файла.
-     */
-    private void addTree(@NotNull VcsTree vcsTree, @NotNull Path root) throws IOException {
-        logger.debug("Adding tree with hash " + vcsTree.getHash() + " to " + root);
-        for (ObjectWithName<Blob> file : vcsTree.getBlobFiles()) {
-            Blob blob = file.getContent();
-            Path fileName = Paths.get(file.getName());
-            index.put(fileName, blob.getHash());
-            blob.fillFileWithContent(fileName, repository); // перезапишет файл, даже если тот существует
-        }
-
-        for (VcsTree subVcsTree : vcsTree.getVcsTreeFiles()) {
-            Path treeDirectory = root.resolve(subVcsTree.getPrefix());
-            if (!treeDirectory.toFile().exists()) {
-                Files.createDirectory(treeDirectory);
-            }
-            addTree(subVcsTree, treeDirectory);
-        }
+        repository.restoreTree(vcsTree);
     }
 
     /**
@@ -453,26 +291,10 @@ public class VcsManager {
         VcsTree currentVcsTree = new VcsTree(currentCommit.getTreeHash(), repository);
 
         currentVcsTree.mergeWith(branchVcsTree);
-        createIndexFromTree(currentVcsTree);
+        repository.createIndexFromTree(currentVcsTree);
         restoreCommit(commitHash);
         commitChanges(USERNAME, MERGE_MESSAGE + commitHash);
         logger.debug("Created merge commit");
-    }
-
-    /**
-     * Создание файла index из дерева.
-     * @param vcsTree дерево файлов.
-     */
-    private void createIndexFromTree(@NotNull VcsTree vcsTree) {
-        logger.debug("Creating index from tree " + vcsTree.getHash());
-        index.clear();
-        HashSet<ObjectWithName<Blob>> files = vcsTree.getAllFiles();
-        for (ObjectWithName<Blob> file : files) {
-            Blob blob = file.getContent();
-            String filePath = file.getName();
-            String fileHash = blob.getHash();
-            index.put(Paths.get(filePath), fileHash);
-        }
     }
 
     /**
@@ -541,7 +363,7 @@ public class VcsManager {
      */
     private @NotNull HashSet<String> getTrackedFiles() throws IOException, ClassNotFoundException,
                                                               NotRegularFileException {
-        VcsTree currentVcsTree = createTreeFromIndex();
+        VcsTree currentVcsTree = repository.createTreeFromIndex();
         VcsTree commitVcsTree = new VcsTree(new Commit(new Reference(repository).getCommitHash(),
                 repository).getTreeHash(), repository);
 
@@ -581,7 +403,7 @@ public class VcsManager {
      */
     public @NotNull HashSet<String> getUntrackedFiles() throws NotRegularFileException, IOException,
                                                                ClassNotFoundException, NoRootDirectoryExistsException {
-        FilesTree filesTree = new FilesTree(repository.getRootDirectory(), getTrackedFiles());
+        FilesTree filesTree = repository.getFilesTree(getTrackedFiles());
         logger.debug("Untracked files : " + filesTree.getAllFiles());
         return filesTree.getAllFiles();
     }
@@ -594,7 +416,7 @@ public class VcsManager {
      */
     private void getStatusFiles() throws IOException, ClassNotFoundException, NotRegularFileException {
         logger.debug("Getting status information");
-        VcsTree currentVcsTree = createTreeFromIndex();
+        VcsTree currentVcsTree = repository.createTreeFromIndex();
         VcsTree commitVcsTree = new VcsTree(new Commit(new Reference(repository).getCommitHash(),
                 repository).getTreeHash(), repository);
 
@@ -699,17 +521,8 @@ public class VcsManager {
      * @throws NotRegularFileException исключение, если ожидали файл, а получили директорию.
      * @throws ClassNotFoundException исключение, если невозможно интерпретировать данные.
      */
-    public void clean() throws ClassNotFoundException, NotRegularFileException,
-                               NoRootDirectoryExistsException, IOException {
-        logger.debug("Cleaning repository");
-        HashSet<String> untrackedFiles = getUntrackedFiles();
-        for (String path : untrackedFiles) {
-            File file = repository.getRootDirectory().resolve(path).toFile();
-            if (file.isDirectory()) {
-                FileUtils.deleteDirectory(file);
-            } else {
-                file.delete();
-            }
-        }
+    public void clean(@NotNull HashSet<String> untrackedFiles) throws ClassNotFoundException, NotRegularFileException,
+            NoRootDirectoryExistsException, IOException {
+        repository.clean(untrackedFiles);
     }
 }

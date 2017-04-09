@@ -91,13 +91,13 @@ public class VcsTree extends VcsObjectWithHash implements Tree, Serializable, Co
 
     /**
      * Вычисление хеша дерева.
-     * @param repository репозиторий, где будет вычислен хеш.
+     * @param data инстанс класса, который знает куда записывать.
      * @throws IOException исключение, если возникли проблемы с чтением файлов.
      */
-    public void computeHash(Repository repository) throws IOException {
+    public void computeHash(Datastore data) throws IOException {
         byte[] content = getContent();
         hash = DigestUtils.sha1Hex(content);
-        Files.write(repository.getObjectsPath().resolve(hash), content);
+        data.storeObject(hash, content);
     }
 
     /**
@@ -181,12 +181,6 @@ public class VcsTree extends VcsObjectWithHash implements Tree, Serializable, Co
      */
     public void addChild(@NotNull VcsTree vcsTree) {
         vcsTreeFiles.add(vcsTree);
-    }
-
-    // TODO : ссылка на интерфейс
-    @Override
-    public @NotNull Path getPathToObject(@NotNull Repository repository) {
-        return repository.getObjectsPath().resolve(hash);
     }
 
     /**

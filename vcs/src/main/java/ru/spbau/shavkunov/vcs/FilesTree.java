@@ -34,6 +34,7 @@ public class FilesTree implements Tree {
      * @throws NoRootDirectoryExistsException исключение, если не существует корневой директории.
      */
     public FilesTree(Path rootPath, HashSet<String> exceptFiles) throws NoRootDirectoryExistsException {
+        // перенести создание в datastore
         files = new HashSet<>();
         subTrees = new HashSet<>();
 

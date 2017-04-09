@@ -115,7 +115,7 @@ public class Main {
         }
 
         try {
-            Repository.initRepository(rootPath);
+            new VcsManager(rootPath).initRepositoryFiles(rootPath);
         } catch (IOException e) {
             e.printStackTrace();
         }
