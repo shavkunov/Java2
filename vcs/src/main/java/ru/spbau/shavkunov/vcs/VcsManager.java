@@ -50,7 +50,7 @@ public class VcsManager {
         repository.initResources();
     }
 
-    public VcsManager(@NotNull Path pathToRepo) throws IOException {
+    public VcsManager(@NotNull Path pathToRepo) throws IOException, NoRepositoryException {
         logger.debug("---------------------------Manager was created---------------------------");
         this.repository = new Repository(pathToRepo);
     }
@@ -119,8 +119,8 @@ public class VcsManager {
      */
     public void checkoutToNewBranch(@NotNull String newBranchName) throws IOException, BranchAlreadyExistsException {
         logger.debug("Creating branch " + newBranchName + "...");
-        String currentHead = repository.getCurrentHead().readLine();
-        if (currentHead.startsWith(REFERENCE_PREFIX)) {
+        String currentHead = repository.getCurrentHead();
+        if (repository.isBranchExists(currentHead)) {
             Reference currentReference = new Reference(repository);
             String commitHash = currentReference.getCommitHash();
             repository.createNewBranch(newBranchName, commitHash);
@@ -213,20 +213,7 @@ public class VcsManager {
     public void deleteBranch(@NotNull String branchName)
                 throws NoBranchExistsException, IOException, CannotDeleteCurrentBranchException {
         logger.debug("Trying to delete branch " + branchName);
-        if (repository.isBranchExists(branchName)) {
-            String head = repository.getCurrentHead().readLine();
-            String currentBranch = head.substring(REFERENCE_PREFIX.length());
-            if (currentBranch.equals(branchName)) {
-                logger.error("Tried to delete current branch");
-                throw new CannotDeleteCurrentBranchException();
-            }
-
-            repository.deleteBranch(branchName);
-            logger.debug("Deleted branch " + branchName);
-        } else {
-            logger.error("Branch with name " + branchName + " doesn't exist");
-            throw new NoBranchExistsException();
-        }
+        repository.deleteBranch(branchName);
     }
 
     /**

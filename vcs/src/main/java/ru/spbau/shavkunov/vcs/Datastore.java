@@ -5,8 +5,6 @@ import ru.spbau.shavkunov.vcs.exceptions.BranchAlreadyExistsException;
 import ru.spbau.shavkunov.vcs.exceptions.NoRootDirectoryExistsException;
 import ru.spbau.shavkunov.vcs.exceptions.NotRegularFileException;
 
-import java.io.BufferedReader;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.HashSet;
@@ -17,7 +15,7 @@ public interface Datastore {
     void writeContent(@NotNull Path pathToFile, @NotNull byte[] content);
     void restoreFile(@NotNull Path pathToFile, @NotNull String fileHash);
     void storeObject(@NotNull VcsObjectWithHash object);
-    @NotNull BufferedReader getHead() throws FileNotFoundException;
+    @NotNull String getHead() throws IOException;
     void storeReference(@NotNull String name, @NotNull String commitHash) throws IOException;
     @NotNull Commit getCommitByHash(@NotNull String commitHash) throws IOException, ClassNotFoundException;
     @NotNull VcsTree getTreeByHash(@NotNull String treeHash) throws IOException, ClassNotFoundException;

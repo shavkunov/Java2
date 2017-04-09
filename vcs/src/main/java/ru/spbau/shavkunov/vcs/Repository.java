@@ -3,21 +3,13 @@ package ru.spbau.shavkunov.vcs;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import ru.spbau.shavkunov.vcs.exceptions.BranchAlreadyExistsException;
-import ru.spbau.shavkunov.vcs.exceptions.NoRepositoryException;
-import ru.spbau.shavkunov.vcs.exceptions.NoRootDirectoryExistsException;
-import ru.spbau.shavkunov.vcs.exceptions.NotRegularFileException;
+import ru.spbau.shavkunov.vcs.exceptions.*;
 
-import java.io.BufferedReader;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.nio.file.NotDirectoryException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
-
-import static ru.spbau.shavkunov.vcs.Constants.REFERENCE_PREFIX;
-import static ru.spbau.shavkunov.vcs.Constants.VCS_FOLDER;
 
 /**
  * Класс, осуществляющий всю внутреннюю работу с репозиторием.
@@ -130,7 +122,7 @@ public class Repository {
      * @return содержимое файла head.
      * @throws IOException исключение, если возникли проблемы с чтением файла.
      */
-    public @NotNull BufferedReader getCurrentHead() throws IOException {
+    public @NotNull String getCurrentHead() throws IOException {
         return data.getHead();
     }
 
@@ -150,21 +142,8 @@ public class Repository {
      * @throws IOException исключение, если возникли проблемы с чтением файла или файл не оказался директорией.
      * @throws NoRepositoryException исключение, если по данному пути нет репозитория.
      */
-    public static Repository getRepository(@NotNull Path path) throws IOException, NoRepositoryException {
-        if (!Files.isDirectory(path)) {
-            throw new NotDirectoryException(path.toString());
-        }
-
-        Path rootDir = path.resolve(VCS_FOLDER);
-        if (!Files.exists(rootDir)) {
-            throw new NoRepositoryException();
-        }
-
-        return new Repository(path);
-    }
-
-    public Repository(@NotNull Path rootDirectory) throws IOException {
-        data = new Filesystem(rootDirectory);
+    public Repository(@NotNull Path path) throws IOException, NoRepositoryException {
+        data = new Filesystem(path);
         index = data.readIndex();
     }
 
@@ -173,8 +152,20 @@ public class Repository {
      * @param branchName ветку с этим именем требуется удалить.
      * @throws IOException исключение, если возникли проблемы с чтением файла.
      */
-    public void deleteBranch(@NotNull String branchName) throws IOException {
-        data.deleteBranch(branchName);
+    public void deleteBranch(@NotNull String branchName) throws IOException, NoBranchExistsException, CannotDeleteCurrentBranchException {
+        if (isBranchExists(branchName)) {
+            String currentHead = getCurrentHead();
+            if (currentHead.equals(branchName)) {
+                logger.error("Tried to delete current branch");
+                throw new CannotDeleteCurrentBranchException();
+            }
+
+            data.deleteBranch(branchName);
+            logger.debug("Deleted branch " + branchName);
+        } else {
+            logger.error("Branch with name " + branchName + " doesn't exist");
+            throw new NoBranchExistsException();
+        }
     }
 
     /**

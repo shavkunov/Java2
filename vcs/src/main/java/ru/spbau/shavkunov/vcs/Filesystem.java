@@ -5,6 +5,7 @@ import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ru.spbau.shavkunov.vcs.exceptions.BranchAlreadyExistsException;
+import ru.spbau.shavkunov.vcs.exceptions.NoRepositoryException;
 import ru.spbau.shavkunov.vcs.exceptions.NoRootDirectoryExistsException;
 import ru.spbau.shavkunov.vcs.exceptions.NotRegularFileException;
 
@@ -83,7 +84,17 @@ public class Filesystem implements Datastore {
         return rootDirectory;
     }
     
-    public Filesystem(@NotNull Path rootDirectory) {
+    public Filesystem(@NotNull Path rootDirectory) throws NoRepositoryException, NotDirectoryException {
+        if (!Files.isDirectory(rootDirectory)) {
+            throw new NotDirectoryException(rootDirectory.toString());
+        }
+
+        rootDirectory = rootDirectory.resolve(VCS_FOLDER);
+
+        if (!Files.exists(rootDirectory)) {
+            throw new NoRepositoryException();
+        }
+
         this.rootDirectory = rootDirectory;
     }
 
@@ -195,14 +206,19 @@ public class Filesystem implements Datastore {
     }
 
     /**
-     * Получение ссылки на head файл.
-     * @return путь к файлу head.
+     * Получение содержимого head файла
+     * @return содержимое head файла.
      */
     @Override
-    public @NotNull BufferedReader getHead() throws FileNotFoundException {
+    public @NotNull String getHead() throws IOException {
         BufferedReader reader = new BufferedReader(new FileReader(getHeadPath().toFile()));
 
-        return reader;
+        String head = reader.readLine();
+        if (head.startsWith(REFERENCE_PREFIX)) {
+            head = head.substring(REFERENCE_PREFIX.length());
+        }
+
+        return head;
     }
 
     private @NotNull Path getHeadPath() {

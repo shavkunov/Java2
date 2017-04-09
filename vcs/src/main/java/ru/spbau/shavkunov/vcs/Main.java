@@ -7,7 +7,6 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
-import static ru.spbau.shavkunov.vcs.Constants.REFERENCE_PREFIX;
 import static ru.spbau.shavkunov.vcs.Constants.USERNAME;
 
 public class Main {
@@ -118,6 +117,8 @@ public class Main {
             new VcsManager(rootPath).initRepositoryFiles();
         } catch (IOException e) {
             e.printStackTrace();
+        } catch (NoRepositoryException e) {
+            e.printStackTrace();
         }
     }
 
@@ -135,6 +136,8 @@ public class Main {
         } catch (IOException e) {
             e.printStackTrace();
         } catch (NotRegularFileException e) {
+            e.printStackTrace();
+        } catch (NoRepositoryException e) {
             e.printStackTrace();
         }
     }
@@ -154,6 +157,8 @@ public class Main {
         } catch (IOException e) {
             e.printStackTrace();
         } catch (NotRegularFileException e) {
+            e.printStackTrace();
+        } catch (NoRepositoryException e) {
             e.printStackTrace();
         }
     }
@@ -175,6 +180,8 @@ public class Main {
             e.printStackTrace();
         } catch (ClassNotFoundException e) {
             e.printStackTrace();
+        } catch (NoRepositoryException e) {
+            e.printStackTrace();
         }
     }
 
@@ -195,6 +202,8 @@ public class Main {
             e.printStackTrace();
         } catch (NotRegularFileException e) {
             e.printStackTrace();
+        } catch (NoRepositoryException e) {
+            e.printStackTrace();
         }
     }
 
@@ -214,6 +223,8 @@ public class Main {
         } catch (IOException e) {
             e.printStackTrace();
         } catch (BranchAlreadyExistsException e) {
+            e.printStackTrace();
+        } catch (NoRepositoryException e) {
             e.printStackTrace();
         }
     }
@@ -237,6 +248,8 @@ public class Main {
             e.printStackTrace();
         } catch (ClassNotFoundException e) {
             e.printStackTrace();
+        } catch (NoRepositoryException e) {
+            e.printStackTrace();
         }
     }
 
@@ -259,6 +272,8 @@ public class Main {
             e.printStackTrace();
         } catch (CannotDeleteCurrentBranchException e) {
             e.printStackTrace();
+        } catch (NoRepositoryException e) {
+            e.printStackTrace();
         }
     }
 
@@ -270,10 +285,10 @@ public class Main {
 
     private static void handleBranch(CommandLine cmd) {
         try {
-            Repository repository = Repository.getRepository(rootPath);
-            String currentHead = repository.getCurrentHead().readLine();
-            if (currentHead.startsWith(REFERENCE_PREFIX)) {
-                System.out.println("Current branch name : " + currentHead.substring(REFERENCE_PREFIX.length()));
+            Repository repository = new Repository(rootPath);
+            String currentHead = repository.getCurrentHead();
+            if (repository.isBranchExists(currentHead)) {
+                System.out.println("Current branch name : " + currentHead);
             } else {
                 System.out.println("Current hash of commit : " + currentHead);
             }
@@ -295,6 +310,8 @@ public class Main {
         } catch (IOException e) {
             e.printStackTrace();
         } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+        } catch (NoRepositoryException e) {
             e.printStackTrace();
         }
     }
@@ -318,6 +335,8 @@ public class Main {
             e.printStackTrace();
         } catch (ClassNotFoundException e) {
             e.printStackTrace();
+        } catch (NoRepositoryException e) {
+            e.printStackTrace();
         }
     }
 
@@ -337,6 +356,8 @@ public class Main {
             e.printStackTrace();
         } catch (ClassNotFoundException e) {
             e.printStackTrace();
+        } catch (NoRepositoryException e) {
+            e.printStackTrace();
         }
     }
 
@@ -355,6 +376,8 @@ public class Main {
         } catch (NotRegularFileException e) {
             e.printStackTrace();
         } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+        } catch (NoRepositoryException e) {
             e.printStackTrace();
         }
     }

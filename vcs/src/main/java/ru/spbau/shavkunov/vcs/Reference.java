@@ -6,8 +6,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 
-import static ru.spbau.shavkunov.vcs.Constants.REFERENCE_PREFIX;
-
 /**
  * Класс, отвечающий за представление объекта reference(ссылка) в системе контроля версий.
  * Ссылка указывает на текущую ветку и хеш коммита, отвечающий за текущее состояние репозитория.
@@ -32,13 +30,12 @@ public class Reference {
      * @throws IOException исключение, если возникли проблемы с чтением файла.
      */
     public Reference(@NotNull Repository repository) throws IOException {
-        String head = repository.getCurrentHead().readLine();
-        if (head.startsWith(REFERENCE_PREFIX)) {
-            name = head.substring(REFERENCE_PREFIX.length());
+        name = repository.getCurrentHead();
+        if (repository.isBranchExists(name)) {
             commitHash = repository.getReferenceCommitHash(name);
         } else {
+            commitHash = name;
             name = "Commit hash";
-            commitHash = head;
         }
 
         logger.debug("Created reference. Commit hash : " + commitHash);
