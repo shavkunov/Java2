@@ -2,6 +2,9 @@ group 'vcs'
 version '1.0-SNAPSHOT'
 
 apply plugin: 'java'
+apply plugin: 'application'
+
+mainClassName = "ru.spbau.shavkunov.vcs.Main"
 
 sourceCompatibility = 1.8
 
