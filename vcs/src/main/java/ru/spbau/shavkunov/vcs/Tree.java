@@ -1,7 +1,5 @@
 package ru.spbau.shavkunov.vcs;
 
-import org.jetbrains.annotations.NotNull;
-
 import java.nio.file.Path;
 
 /**
@@ -20,20 +18,4 @@ interface Tree {
      * @return true, если файл присутствует, иначе false.
      */
     boolean isFileExists(Path pathToFile);
-
-    /**
-     * Клонирование строки.
-     * @param sample эта строка будет размножена.
-     * @param amount число, отвечающие за количество клонов строки sample
-     * @return размноженную строку.
-     */
-    static @NotNull String multiply(@NotNull String sample, int amount) {
-        String copy = "";
-
-        for (int i = 0; i < amount; i++) {
-            copy += sample;
-        }
-
-        return copy;
-    }
 }

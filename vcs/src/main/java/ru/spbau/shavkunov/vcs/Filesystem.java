@@ -26,15 +26,18 @@ public class Filesystem implements Datastore {
     @NotNull
     private static final Logger logger = LoggerFactory.getLogger(Filesystem.class);
 
+    /**
+     * Папка репозитория(т.е. с суффиксом VCS_FOLDER)
+     */
     private @NotNull Path rootDirectory;
 
     @Override
-    public void initResources() throws IOException {
-        if (!Files.isDirectory(rootDirectory)) {
-            throw new NotDirectoryException(rootDirectory.toString());
+    public void initResources(@NotNull Path pathToRepo) throws IOException {
+        if (!Files.isDirectory(pathToRepo)) {
+            throw new NotDirectoryException(pathToRepo.toString());
         }
 
-        Path rootDir = rootDirectory.resolve(VCS_FOLDER).normalize();
+        Path rootDir = pathToRepo.resolve(VCS_FOLDER).normalize();
 
         Files.createDirectory(rootDir);
         Files.createDirectory(rootDir.resolve(OBJECTS_FOLDER));
@@ -98,6 +101,10 @@ public class Filesystem implements Datastore {
         this.rootDirectory = rootDirectory;
     }
 
+    public Filesystem() {
+
+    }
+
     @Override
     public void writeHead(@NotNull String revision) throws IOException {
         if (getReferencesPath().resolve(revision).toFile().exists()) {
@@ -108,18 +115,18 @@ public class Filesystem implements Datastore {
     }
 
     @Override
-    public void writeContent(@NotNull Path pathToFile, @NotNull byte[] content) {
-
+    public void writeContent(@NotNull Path pathToFile, @NotNull byte[] content) throws IOException {
+        Files.write(pathToFile, content);
     }
 
     @Override
-    public void restoreFile(@NotNull Path pathToFile, @NotNull String fileHash) {
-
+    public void restoreFile(@NotNull Path pathToFile, @NotNull String fileHash) throws IOException {
+        FileUtils.copyFile(getObjectsPath().resolve(fileHash).toFile(), pathToFile.toFile());
     }
 
     @Override
-    public void storeObject(@NotNull VcsObjectWithHash object) {
-
+    public void storeObject(@NotNull VcsObjectWithHash object) throws IOException {
+        Files.write(getObjectsPath().resolve(object.getHash()), object.getContent());
     }
 
     @Override
@@ -156,53 +163,37 @@ public class Filesystem implements Datastore {
     @NotNull
     @Override
     public String getReferenceCommitHash(@NotNull String referenceName) throws IOException {
-        return getFirstLine(getReferencesPath().resolve(referenceName));
-    }
-
-    /**
-     * Получение первой строчки файла.
-     * @param pathToFile путь к файлу.
-     * @return первая строчка данного файла.
-     * @throws IOException исключение, если возникли проблемы с чтением файлов.
-     */
-    public static String getFirstLine(@NotNull Path pathToFile) throws IOException {
-        BufferedReader reader = new BufferedReader(new FileReader(pathToFile.toFile()));
-        String line = reader.readLine();
-        if (line == null) {
-            line = "";
-        }
-
-        return line;
+        return Utils.getFirstLine(getReferencesPath().resolve(referenceName));
     }
 
     @NotNull
     @Override
-    public FilesTree getFilesTree(@NotNull HashSet<String> excludeFiles) {
-        return null;
+    public FilesTree getFilesTree(@NotNull HashSet<String> excludeFiles) throws NoRootDirectoryExistsException {
+        return new FilesTree(rootDirectory.getParent(), excludeFiles);
     }
 
     /**
      * Получение ссылки на файл index.
      * @return путь к файлу index.
      */
-    private @NotNull Path getIndexPath() {
-        return rootDirectory.resolve(VCS_FOLDER).resolve(INDEX_FILE);
+    public  @NotNull Path getIndexPath() {
+        return rootDirectory.resolve(INDEX_FILE);
     }
 
     /**
      * Получение ссылки на папку, где хранятся все объекты.
      * @return путь к папке объектов.
      */
-    private @NotNull Path getObjectsPath() {
-        return rootDirectory.resolve(VCS_FOLDER).resolve(OBJECTS_FOLDER);
+    public @NotNull Path getObjectsPath() {
+        return rootDirectory.resolve(OBJECTS_FOLDER);
     }
 
     /**
      * Получение ссылки на папку, где хранятся все ветки.
      * @return путь к папке ссылок.
      */
-    private @NotNull Path getReferencesPath() {
-        return rootDirectory.resolve(VCS_FOLDER).resolve(REFERENCES_FOLDER);
+    public @NotNull Path getReferencesPath() {
+        return rootDirectory.resolve(REFERENCES_FOLDER);
     }
 
     /**
@@ -222,7 +213,7 @@ public class Filesystem implements Datastore {
     }
 
     private @NotNull Path getHeadPath() {
-        return rootDirectory.resolve(VCS_FOLDER).resolve(HEAD);
+        return rootDirectory.resolve(HEAD);
     }
 
     /**
@@ -287,17 +278,15 @@ public class Filesystem implements Datastore {
     public void updateIndex(@NotNull Map<Path, String> index) throws IOException {
         logger.debug("Updating index file");
 
-        FileWriter fileWriter = new FileWriter(getIndexPath().toFile());
-        BufferedWriter bufferedWriter = new BufferedWriter(fileWriter);
+        try (FileWriter fileWriter = new FileWriter(getIndexPath().toFile());
+             BufferedWriter bufferedWriter = new BufferedWriter(fileWriter)) {
 
-        for (Map.Entry<Path, String> entry : index.entrySet()) {
-            String line = entry.getKey().toString() + " " + entry.getValue();
-            bufferedWriter.write(line);
-            bufferedWriter.newLine();
+            for (Map.Entry<Path, String> entry : index.entrySet()) {
+                String line = entry.getKey().toString() + " " + entry.getValue();
+                bufferedWriter.write(line);
+                bufferedWriter.newLine();
+            }
         }
-
-        bufferedWriter.flush();
-        bufferedWriter.close();
 
         logger.debug("Updating index is complete");
     }
@@ -314,7 +303,7 @@ public class Filesystem implements Datastore {
         logger.debug("Cleaning repository");
 
         for (String path : untrackedFiles) {
-            File file = rootDirectory.resolve(path).toFile();
+            File file = rootDirectory.getParent().resolve(path).toFile();
             if (file.isDirectory()) {
                 FileUtils.deleteDirectory(file);
             } else {

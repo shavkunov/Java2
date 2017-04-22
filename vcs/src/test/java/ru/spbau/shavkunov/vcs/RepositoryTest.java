@@ -17,26 +17,26 @@ import static ru.spbau.shavkunov.vcs.TestConstants.rootPath;
 
 public class RepositoryTest {
     @Before
-    public void setUp() throws IOException {
+    public void setUp() throws IOException, NoRepositoryException {
         FileUtils.deleteDirectory(rootPath.resolve(VCS_FOLDER).toFile());
         new VcsManagerTest().createTempDirectories();
     }
 
     @Test
     public void initRepositoryTest() throws Exception {
-        Repository.initRepository(rootPath);
-        Repository repository = Repository.getRepository(rootPath);
-        assertThat(repository.getRootDirectory(), is(rootPath));
-        assertEquals(4, repository.getRootDirectory().resolve(VCS_FOLDER).toFile().listFiles().length);
+        Repository.initResources(rootPath);
+        Repository repository = new Repository(rootPath);
+        assertThat(repository.getRootDirectory(), is(rootPath.resolve(VCS_FOLDER)));
+        assertEquals(4, repository.getRootDirectory().toFile().listFiles().length);
     }
 
     @Test
     public void branchManageTest() throws IOException, NoRepositoryException, NotRegularFileException,
             BranchAlreadyExistsException, CannotDeleteCurrentBranchException, NoBranchExistsException {
-        Repository.initRepository(rootPath);
-        Repository repository = Repository.getRepository(rootPath);
+        Repository.initResources(rootPath);
+        VcsManager manager = new VcsManager(rootPath);
+        Repository repository = new Repository(rootPath);
         assertTrue(repository.isBranchExists(DEFAULT_BRANCH_NAME));
-        VcsManager manager = new VcsManager(repository);
 
         manager.addFile(pathToFile);
         manager.commitChanges("me", "test commit");

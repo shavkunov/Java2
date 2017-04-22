@@ -43,7 +43,7 @@ public class Main {
 
         CommandLineParser parser = new DefaultParser();
         try {
-            CommandLine cmd = parser.parse( options, args);
+            CommandLine cmd = parser.parse(options, args);
             if (cmd.hasOption(INIT_COMMAND)) {
                 handleInit(cmd);
             }
@@ -110,11 +110,11 @@ public class Main {
     private static void handleInit(CommandLine cmd) {
         String[] initArgs = cmd.getOptionValues(INIT_COMMAND);
         if (initArgs.length == 1) {
-            rootPath = Paths.get(initArgs[1]).normalize();
+            rootPath = Paths.get(initArgs[0]).normalize();
         }
 
         try {
-            new VcsManager(rootPath).initRepositoryFiles();
+            Repository.initResources(rootPath);
         } catch (IOException e) {
             e.printStackTrace();
         } catch (NoRepositoryException e) {

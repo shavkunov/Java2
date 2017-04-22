@@ -46,10 +46,6 @@ public class VcsManager {
      */
     private @Nullable ArrayList<String> modifiedFiles;
 
-    public void initRepositoryFiles() throws IOException {
-        repository.initResources();
-    }
-
     public VcsManager(@NotNull Path pathToRepo) throws IOException, NoRepositoryException {
         logger.debug("---------------------------Manager was created---------------------------");
         this.repository = new Repository(pathToRepo);
@@ -345,7 +341,7 @@ public class VcsManager {
     private @NotNull VcsTree getTreeOfCurrentCommit() throws IOException, ClassNotFoundException {
         Reference reference = new Reference(repository);
         Commit commit = repository.getCommit(reference.getCommitHash());
-        return repository.getTree(commit.getHash());
+        return repository.getTree(commit.getTreeHash());
     }
 
     /**

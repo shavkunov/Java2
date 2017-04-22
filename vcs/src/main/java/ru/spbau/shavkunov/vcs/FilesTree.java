@@ -69,8 +69,8 @@ public class FilesTree implements Tree {
     // TODO : ссылка на интерфейс
     @Override
     public void printTree(int spaces) {
-        String indent = Tree.multiply("-", spaces + 1);
-        String directoryIndent = Tree.multiply("-", spaces);
+        String indent = Utils.multiply("-", spaces + 1);
+        String directoryIndent = Utils.multiply("-", spaces);
         System.out.println(directoryIndent + prefix);
 
         for (String file : files) {
@@ -85,17 +85,7 @@ public class FilesTree implements Tree {
     // TODO : ссылка на интерфейс
     @Override
     public boolean isFileExists(Path pathToFile) {
-        if (files.contains(pathToFile.toString())) {
-            return true;
-        }
-
-        for (FilesTree subTree : subTrees) {
-            if (subTree.isFileExists(pathToFile)) {
-                return true;
-            }
-        }
-
-        return false;
+        return subTrees.stream().anyMatch(t -> t.isFileExists(pathToFile));
     }
 
     /**

@@ -28,8 +28,13 @@ public class Repository {
      */
     private @NotNull Map<Path, String> index;
 
-    public void initResources() throws IOException {
-        data.initResources();
+    public Repository(@NotNull Filesystem fileSystem) throws IOException {
+        data = fileSystem;
+        index = data.readIndex();
+    }
+
+    public static void initResources(@NotNull Path pathToRepo) throws IOException, NoRepositoryException {
+        new Filesystem().initResources(pathToRepo);
     }
 
     /**
@@ -38,7 +43,7 @@ public class Repository {
      * @param hash хеш добавляемого файла.
      */
     public void addFileToIndex(@NotNull Path pathToFile, @NotNull String hash) throws IOException {
-        logger.debug("Adding file " + pathToFile + " to index");
+        logger.debug("Adding file {} to index", pathToFile);
         index.put(pathToFile, hash);
         data.updateIndex(index);
     }
@@ -202,15 +207,11 @@ public class Repository {
     /**
      * Восстановление содержимого файла до состояния коммита.
      * @param pathToFile путь к файлу.
-     * @param fileHash хеш файла.
+     * @param fileHash хеш файла в системе контроля версий.
      * @throws IOException исключение, если возникли проблемы с чтением файлов.
      */
     public void restoreFile(@NotNull Path pathToFile, @NotNull String fileHash) throws IOException {
         data.restoreFile(pathToFile, fileHash);
-    }
-
-    public void writeContent(@NotNull Path pathToFile, byte[] content) {
-        data.writeContent(pathToFile, content);
     }
 
     /**
@@ -223,7 +224,7 @@ public class Repository {
         data.storeObject(blob);
     }
 
-    public void storeObject(@NotNull VcsObjectWithHash object) {
+    public void storeObject(@NotNull VcsObjectWithHash object) throws IOException {
         data.storeObject(object);
     }
 
@@ -249,6 +250,10 @@ public class Repository {
         data.updateIndex(index);
     }
 
+    public Path getRootDirectory() {
+        return data.getRootDirectory();
+    }
+
     /**
      * Создание файла index из дерева.
      * @param vcsTree дерево файлов.
@@ -265,7 +270,7 @@ public class Repository {
         }
     }
 
-    public FilesTree getFilesTree(@NotNull HashSet<String> excludeFiles) {
+    public FilesTree getFilesTree(@NotNull HashSet<String> excludeFiles) throws NoRootDirectoryExistsException {
         return data.getFilesTree(excludeFiles);
     }
 

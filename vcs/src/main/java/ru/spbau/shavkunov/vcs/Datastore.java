@@ -12,16 +12,16 @@ import java.util.Map;
 
 public interface Datastore {
     void writeHead(@NotNull String revision) throws IOException;
-    void writeContent(@NotNull Path pathToFile, @NotNull byte[] content);
-    void restoreFile(@NotNull Path pathToFile, @NotNull String fileHash);
-    void storeObject(@NotNull VcsObjectWithHash object);
+    void writeContent(@NotNull Path pathToFile, @NotNull byte[] content) throws IOException;
+    void restoreFile(@NotNull Path pathToFile, @NotNull String fileHash) throws IOException;
+    void storeObject(@NotNull VcsObjectWithHash object) throws IOException;
     @NotNull String getHead() throws IOException;
     void storeReference(@NotNull String name, @NotNull String commitHash) throws IOException;
     @NotNull Commit getCommitByHash(@NotNull String commitHash) throws IOException, ClassNotFoundException;
     @NotNull VcsTree getTreeByHash(@NotNull String treeHash) throws IOException, ClassNotFoundException;
     @NotNull String getReferenceCommitHash(@NotNull String referenceName) throws IOException;
-    @NotNull FilesTree getFilesTree(@NotNull HashSet<String> excludeFiles);
-    void initResources() throws IOException;
+    @NotNull FilesTree getFilesTree(@NotNull HashSet<String> excludeFiles) throws NoRootDirectoryExistsException;
+    void initResources(@NotNull Path rootDirectory) throws IOException;
     void createNewBranch(@NotNull String branchName, @NotNull String commitHash)
                                                         throws BranchAlreadyExistsException, IOException;
     void deleteBranch(@NotNull String branchName) throws IOException;

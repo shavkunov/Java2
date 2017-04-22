@@ -17,25 +17,26 @@ import static ru.spbau.shavkunov.vcs.TestConstants.rootPath;
 public class VcsTreeTest {
     private VcsManager manager;
     private VcsManagerTest test;
+    private Repository repository;
 
     @Before
     public void setUp() throws Exception, NotRegularFileException {
         test = new VcsManagerTest();
         test.setUp();
         test.addFileTest();
-        Repository repository = Repository.getRepository(rootPath);
-        manager = new VcsManager(repository);
+        manager = new VcsManager(rootPath);
+        repository = new Repository(rootPath);
     }
 
     @Test
     public void checkCreatingTreeFromIndex() throws Exception, NotRegularFileException {
-        VcsTree vcsTree = manager.createTreeFromIndex();
+        VcsTree vcsTree = repository.createTreeFromIndex();
         assertNotNull(vcsTree.getHash());
     }
 
     @Test
     public void checkFileInTree() throws IOException, NotRegularFileException {
-        VcsTree vcsTree = manager.createTreeFromIndex();
+        VcsTree vcsTree = repository.createTreeFromIndex();
         assertTrue(vcsTree.isFileExists(pathToFile));
         assertTrue(vcsTree.getAllFiles()
                           .stream()

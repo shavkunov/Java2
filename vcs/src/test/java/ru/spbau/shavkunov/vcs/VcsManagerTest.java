@@ -17,22 +17,27 @@ import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.*;
-import static ru.spbau.shavkunov.vcs.Constants.MERGE_MESSAGE;
-import static ru.spbau.shavkunov.vcs.Constants.VCS_FOLDER;
+import static ru.spbau.shavkunov.vcs.Constants.*;
 import static ru.spbau.shavkunov.vcs.TestConstants.pathToFile;
 import static ru.spbau.shavkunov.vcs.TestConstants.rootPath;
 
+// TODO : setup mock
 public class VcsManagerTest {
     private VcsManager manager;
     private Repository repository;
+    private Filesystem filesystemMock;
+    private Filesystem filesystem;
 
     @Before
     public void setUp() throws IOException, NoRepositoryException {
         deleteTmpFiles();
 
-        Repository.initRepository(rootPath);
-        repository = Repository.getRepository(rootPath);
-        manager = new VcsManager(repository);
+        Repository.initResources(rootPath);
+        manager = new VcsManager(rootPath);
+
+        //fileSystemMock = mock(Filesystem.class);
+        filesystem = new Filesystem(rootPath);
+        repository = new Repository(filesystem);
 
         createTempDirectories();
     }
@@ -40,12 +45,12 @@ public class VcsManagerTest {
     @Test
     public void addFileTest() throws Exception, NotRegularFileException {
         String hash = manager.addFile(pathToFile);
-        Path pathToFileInVcs = repository.getObjectsPath().resolve(hash);
+        Path pathToFileInVcs = rootPath.resolve(VCS_FOLDER).resolve(OBJECTS_FOLDER).resolve(hash);
         assertTrue(pathToFileInVcs.toFile().exists());
         assertEquals(Arrays.toString(Files.readAllBytes(pathToFile)),
                      Arrays.toString(Files.readAllBytes(pathToFileInVcs)));
 
-        String firstIndexLine = Repository.getFirstLine(repository.getIndexPath());
+        String firstIndexLine = Utils.getFirstLine(filesystem.getIndexPath());
         String pathWithHash[] = firstIndexLine.split(" ");
         Path pathToFileInIndex = Paths.get(pathWithHash[0]);
         String hashFileInIndex = pathWithHash[1];
@@ -57,25 +62,26 @@ public class VcsManagerTest {
     public void removeFileTest() throws Exception, NotRegularFileException {
         addFileTest();
         manager.removeFile(pathToFile);
-        String firstIndexLine = Repository.getFirstLine(repository.getIndexPath());
+        String firstIndexLine = Utils.getFirstLine(filesystem.getIndexPath());
         assertEquals("", firstIndexLine);
     }
 
     @Test
     public void commitChangesTest() throws Exception, NotRegularFileException {
-        addFileTest();
+        manager.addFile(pathToFile);
+
         String author = "me";
         String message = "test commit";
         manager.commitChanges(author, message);
 
-        String commitHash = Repository.getFirstLine(repository.getReferencesPath().resolve("master"));
-        assertTrue(repository.getObjectsPath().resolve(commitHash).toFile().exists());
-        Commit commit = new Commit(commitHash, repository);
+        String commitHash = Utils.getFirstLine(filesystem.getReferencesPath().resolve("master"));
+        assertTrue(filesystem.getObjectsPath().resolve(commitHash).toFile().exists());
+        Commit commit = repository.getCommit(commitHash);
 
         assertEquals(author, commit.getAuthor());
         assertEquals(message, commit.getMessage());
 
-        VcsTree vcsTree = new VcsTree(commit.getTreeHash(), repository);
+        VcsTree vcsTree = repository.getTree(commit.getTreeHash());
         assertTrue(vcsTree.isFileExists(pathToFile));
     }
 
@@ -86,9 +92,9 @@ public class VcsManagerTest {
         String branchName = "test";
         manager.checkoutToNewBranch(branchName);
 
-        assertTrue(repository.getReferencesPath().resolve(branchName).toFile().exists());
-        assertEquals(Repository.getFirstLine(repository.getReferencesPath().resolve("master")),
-                     Repository.getFirstLine(repository.getReferencesPath().resolve(branchName)));
+        assertTrue(filesystem.getReferencesPath().resolve(branchName).toFile().exists());
+        assertEquals(Utils.getFirstLine(filesystem.getReferencesPath().resolve("master")),
+                     Utils.getFirstLine(filesystem.getReferencesPath().resolve(branchName)));
     }
 
     @Test
@@ -96,10 +102,11 @@ public class VcsManagerTest {
         manager.addFile(rootPath.resolve("test1"));
         manager.addFile(rootPath.resolve("test2"));
         manager.commitChanges("me", "master 1 commit");
-        VcsTree masterVcsTree = manager.createTreeFromIndex();
+        repository = new Repository(rootPath);
+        VcsTree masterVcsTree = repository.createTreeFromIndex();
 
         Reference currentReference = new Reference(repository);
-        Commit currentCommit = new Commit(currentReference.getCommitHash(), repository);
+        Commit currentCommit = repository.getCommit(currentReference.getCommitHash());
         assertEquals(currentCommit.getTreeHash(),
                      masterVcsTree.getHash());
 
@@ -107,7 +114,7 @@ public class VcsManagerTest {
         manager.addFile(rootPath.resolve("test").resolve("test3"));
         manager.commitChanges("me", "test 1 commit");
         manager.checkout("master");
-        VcsTree testVcsTree = manager.createTreeFromIndex();
+        VcsTree testVcsTree = repository.createTreeFromIndex();
 
         assertEquals(masterVcsTree.getHash(), testVcsTree.getHash());
     }
@@ -129,7 +136,7 @@ public class VcsManagerTest {
         manager.checkoutToNewBranch("test");
         manager.deleteBranch("master");
 
-        assertFalse(repository.getReferencesPath().resolve("master").toFile().exists());
+        assertFalse(filesystem.getReferencesPath().resolve("master").toFile().exists());
     }
 
     @Test
@@ -154,7 +161,7 @@ public class VcsManagerTest {
         manager.checkoutToNewBranch("feature");
         manager.addFile(rootPath.resolve("test").resolve("test3"));
         manager.commitChanges("me", "implemented feature");
-        String featureCommitHash = Repository.getFirstLine(repository.getReferencesPath().resolve("feature"));
+        String featureCommitHash = Utils.getFirstLine(filesystem.getReferencesPath().resolve("feature"));
         TimeUnit.SECONDS.sleep(1);
         manager.checkout("master");
         manager.merge("feature");
@@ -189,16 +196,16 @@ public class VcsManagerTest {
         assertEquals("test1", manager.getModifiedFiles().get(0));
         manager.reset(pathToTest);
 
-        assertEquals("text1", Repository.getFirstLine(pathToTest));
+        assertEquals("text1", Utils.getFirstLine(pathToTest));
     }
 
     @Test
     public void cleanTest() throws IOException, NoRepositoryException, NotRegularFileException, NoRootDirectoryExistsException, ClassNotFoundException {
         FileUtils.deleteDirectory(rootPath.resolve(VCS_FOLDER).toFile());
         Path newRootPath = rootPath.resolve("test");
-        Repository.initRepository(newRootPath);
-        repository = Repository.getRepository(newRootPath);
-        manager = new VcsManager(repository);
+
+        Repository.initResources(newRootPath);
+        manager = new VcsManager(newRootPath);
 
         manager.addFile(newRootPath.resolve("test3"));
         manager.addFile(newRootPath.resolve("test4"));
@@ -210,7 +217,7 @@ public class VcsManagerTest {
 
     @After
     public void tearDown() throws IOException {
-        deleteTmpFiles();
+        //deleteTmpFiles();
     }
 
     public void deleteTmpFiles() throws IOException {

@@ -55,6 +55,7 @@ public class VcsTree extends VcsObjectWithHash implements Tree, Serializable, Co
      * @throws IOException исключение, если возникли проблемы с чтением файлов.
      * @throws ClassNotFoundException исключение, если невозможно интерпретировать данные.
      */
+    @SuppressWarnings("unchecked")
     public VcsTree(@NotNull String treeHash, @NotNull byte[] content) throws IOException, ClassNotFoundException {
         try (ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(content);
              ObjectInputStream input = new ObjectInputStream(byteArrayInputStream)) {
@@ -130,8 +131,8 @@ public class VcsTree extends VcsObjectWithHash implements Tree, Serializable, Co
     // TODO : ссылка на интерфейс
     @Override
     public void printTree(int spaces) {
-        String indent = Tree.multiply("-", spaces + 1);
-        String directoryIndent = Tree.multiply("-", spaces);
+        String indent = Utils.multiply("-", spaces + 1);
+        String directoryIndent = Utils.multiply("-", spaces);
         System.out.println(directoryIndent + prefix);
 
         for (ObjectWithName<Blob> blob : blobFiles) {

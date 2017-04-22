@@ -9,6 +9,7 @@ import ru.spbau.shavkunov.vcs.exceptions.NotRegularFileException;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 
 /**
  * Класс, представляющий собой обертку над файлом пользователя.
@@ -16,10 +17,10 @@ import java.nio.file.Path;
 public class Blob extends VcsObjectWithHash {
     private static final @NotNull Logger logger = LoggerFactory.getLogger(Blob.class);
 
-    private Path pathToFile;
+    private String pathToFile;
 
     public Path getPathToFile() {
-        return pathToFile;
+        return Paths.get(pathToFile);
     }
 
     /**
@@ -33,13 +34,13 @@ public class Blob extends VcsObjectWithHash {
             throw new NotRegularFileException();
         }
 
-        pathToFile = path.normalize();
+        pathToFile = path.normalize().toString();
         hash = DigestUtils.sha1Hex(Files.readAllBytes(path));
         logger.debug("Created blob with hash : " + hash);
     }
 
     @Override
     public byte[] getContent() throws IOException {
-        return Files.readAllBytes(pathToFile);
+        return Files.readAllBytes(getPathToFile());
     }
 }

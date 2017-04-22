@@ -65,6 +65,7 @@ public class Commit extends VcsObjectWithHash {
      * @throws IOException исключение, если возникли проблемы с чтением файлов.
      * @throws ClassNotFoundException исключение, если не удалось интерпретировать данные(хеш не коммита)
      */
+    @SuppressWarnings("unchecked")
     public Commit(@NotNull byte[] content, @NotNull String commitHash) throws IOException, ClassNotFoundException {
         try (ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(content);
              ObjectInputStream input = new ObjectInputStream(byteArrayInputStream)) {
