@@ -21,11 +21,9 @@ import static ru.spbau.shavkunov.vcs.Constants.*;
 import static ru.spbau.shavkunov.vcs.TestConstants.pathToFile;
 import static ru.spbau.shavkunov.vcs.TestConstants.rootPath;
 
-// TODO : setup mock
 public class VcsManagerTest {
     private VcsManager manager;
     private Repository repository;
-    private Filesystem filesystemMock;
     private Filesystem filesystem;
 
     @Before
@@ -35,7 +33,6 @@ public class VcsManagerTest {
         Repository.initResources(rootPath);
         manager = new VcsManager(rootPath);
 
-        //fileSystemMock = mock(Filesystem.class);
         filesystem = new Filesystem(rootPath);
         repository = new Repository(filesystem);
 
@@ -105,7 +102,7 @@ public class VcsManagerTest {
         repository = new Repository(rootPath);
         VcsTree masterVcsTree = repository.createTreeFromIndex();
 
-        Reference currentReference = new Reference(repository);
+        Reference currentReference = repository.getReference();
         Commit currentCommit = repository.getCommit(currentReference.getCommitHash());
         assertEquals(currentCommit.getTreeHash(),
                      masterVcsTree.getHash());

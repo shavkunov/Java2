@@ -1,6 +1,7 @@
 package ru.spbau.shavkunov.vcs;
 
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ru.spbau.shavkunov.vcs.exceptions.*;
@@ -16,7 +17,7 @@ import java.util.stream.Collectors;
 import static ru.spbau.shavkunov.vcs.Constants.*;
 
 /**
- * Класс отвечающий за логику взаимодействия между пользователем и репозиторием.
+ * Класс отвечающий за реализацию комманд.
  */
 public class VcsManager {
     /**
@@ -33,24 +34,21 @@ public class VcsManager {
     /**
      * Добавленные файлы.
      */
-    private @NotNull ArrayList<String> stagedFiles;
+    private @Nullable ArrayList<String> stagedFiles;
 
     /**
      * Удаленные файлы.
      */
-    private @NotNull ArrayList<String> deletedFiles;
+    private @Nullable ArrayList<String> deletedFiles;
 
     /**
      * Измененные файлы.
      */
-    private @NotNull ArrayList<String> modifiedFiles;
+    private @Nullable ArrayList<String> modifiedFiles;
 
     public VcsManager(@NotNull Path pathToRepo) throws IOException, NoRepositoryException {
         logger.debug("---------------------------Manager was created---------------------------");
         this.repository = new Repository(pathToRepo);
-        modifiedFiles = new ArrayList<>();
-        deletedFiles = new ArrayList<>();
-        stagedFiles = new ArrayList<>();
     }
 
     /**
@@ -95,7 +93,7 @@ public class VcsManager {
         logger.debug("Commiting...");
         VcsTree vcsTree = repository.createTreeFromIndex();
         logger.debug("Created tree : " + vcsTree.getHash());
-        Reference ref = new Reference(repository);
+        Reference ref = repository.getReference();
         ArrayList<String> parentCommits;
         if (ref.getCommitHash().equals("")) {
             parentCommits = new ArrayList<>();
@@ -119,7 +117,7 @@ public class VcsManager {
         logger.debug("Creating branch " + newBranchName + "...");
         String currentHead = repository.getCurrentHead();
         if (repository.isBranchExists(currentHead)) {
-            Reference currentReference = new Reference(repository);
+            Reference currentReference = repository.getReference();
             String commitHash = currentReference.getCommitHash();
             repository.createNewBranch(newBranchName, commitHash);
         } else {
@@ -143,7 +141,7 @@ public class VcsManager {
         }
 
         logger.debug("Checkout to " + revision);
-        Reference currentReference = new Reference(repository);
+        Reference currentReference = repository.getReference();
         String commitHash = currentReference.getCommitHash();
         Commit commit = repository.getCommit(commitHash);
         VcsTree vcsTree = repository.getTree(commit.getTreeHash());
@@ -222,7 +220,7 @@ public class VcsManager {
      */
     public @NotNull VcsLog getLog() throws IOException, ClassNotFoundException {
         logger.debug("Creating vcs log");
-        Reference reference = new Reference(repository);
+        Reference reference = repository.getReference();
         String currentCommitHash = reference.getCommitHash();
         Commit currentCommit = repository.getCommit(currentCommitHash);
 
@@ -271,7 +269,7 @@ public class VcsManager {
         Commit commit = repository.getCommit(commitHash);
         VcsTree branchVcsTree = repository.getTree(commit.getTreeHash());
 
-        Reference reference = new Reference(repository);
+        Reference reference = repository.getReference();
         String currentCommitHash = reference.getCommitHash();
         Commit currentCommit = repository.getCommit(currentCommitHash);
         VcsTree currentVcsTree = repository.getTree(currentCommit.getTreeHash());
@@ -329,8 +327,8 @@ public class VcsManager {
      * @param message сообщение перед выводом списка.
      * @param list список, который нужно вывести(каждый элемент на новой строке)
      */
-    private void printList(@NotNull String message, @NotNull ArrayList<String> list) {
-        if (list.size() > 0) {
+    private void printList(@NotNull String message, @Nullable ArrayList<String> list) {
+        if (list != null && list.size() > 0) {
             System.out.println(message);
             for (String item : list) {
                 System.out.println(item);
@@ -347,7 +345,7 @@ public class VcsManager {
      * @throws ClassNotFoundException исключение, если невозможно интерпретировать данные.
      */
     private @NotNull VcsTree getTreeOfCurrentCommit() throws IOException, ClassNotFoundException {
-        Reference reference = new Reference(repository);
+        Reference reference = repository.getReference();
         Commit commit = repository.getCommit(reference.getCommitHash());
         return repository.getTree(commit.getTreeHash());
     }
@@ -418,6 +416,9 @@ public class VcsManager {
 
         Map<String, String> currentMap = getPathWithHashes(currentVcsTree);
         Map<String, String> commitMap = getPathWithHashes(commitVcsTree);
+        modifiedFiles = new ArrayList<>();
+        deletedFiles = new ArrayList<>();
+        stagedFiles = new ArrayList<>();
 
         for (String path : currentMap.keySet()) {
             if (commitMap.containsKey(path)) {

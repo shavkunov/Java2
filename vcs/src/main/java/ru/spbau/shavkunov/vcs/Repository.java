@@ -342,4 +342,23 @@ public class Repository {
                                                                 NoRootDirectoryExistsException, IOException {
         data.clean(untrackedFiles);
     }
+
+    /**
+     * Получение текущей ссылки репозитория.
+     * @return объект текущей ссылки
+     * @throws IOException исключение, если возникли проблемы с файлом.
+     */
+    public Reference getReference() throws IOException {
+        String name = getCurrentHead();
+        String commitHash;
+
+        if (isBranchExists(name)) {
+            commitHash = getReferenceCommitHash(name);
+        } else {
+            commitHash = name;
+            name = "Commit hash";
+        }
+
+        return new Reference(name, commitHash);
+    }
 }

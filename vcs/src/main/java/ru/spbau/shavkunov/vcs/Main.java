@@ -117,8 +117,6 @@ public class Main {
             Repository.initResources(rootPath);
         } catch (IOException e) {
             e.printStackTrace();
-        } catch (NoRepositoryException e) {
-            e.printStackTrace();
         }
     }
 
@@ -133,11 +131,7 @@ public class Main {
             for (String file : addArgs) {
                 manager.addFile(Paths.get(file).normalize());
             }
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (NotRegularFileException e) {
-            e.printStackTrace();
-        } catch (NoRepositoryException e) {
+        } catch (IOException | NoRepositoryException | NotRegularFileException e) {
             e.printStackTrace();
         }
     }
@@ -154,11 +148,7 @@ public class Main {
             for (String file : removeArgs) {
                 manager.removeFile(Paths.get(file).normalize());
             }
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (NotRegularFileException e) {
-            e.printStackTrace();
-        } catch (NoRepositoryException e) {
+        } catch (IOException | NoRepositoryException | NotRegularFileException e) {
             e.printStackTrace();
         }
     }
@@ -176,11 +166,7 @@ public class Main {
             for (String file : resetArgs) {
                 manager.reset(Paths.get(file).normalize());
             }
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
-        } catch (NoRepositoryException e) {
+        } catch (IOException | ClassNotFoundException | NoRepositoryException e) {
             e.printStackTrace();
         }
     }
@@ -198,11 +184,7 @@ public class Main {
         try {
             VcsManager manager = new VcsManager(rootPath);
             manager.commitChanges(USERNAME, message);
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (NotRegularFileException e) {
-            e.printStackTrace();
-        } catch (NoRepositoryException e) {
+        } catch (IOException | NotRegularFileException | NoRepositoryException e) {
             e.printStackTrace();
         }
     }
@@ -220,11 +202,7 @@ public class Main {
         try {
             VcsManager manager = new VcsManager(rootPath);
             manager.checkoutToNewBranch(newBranchName);
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (BranchAlreadyExistsException e) {
-            e.printStackTrace();
-        } catch (NoRepositoryException e) {
+        } catch (IOException | BranchAlreadyExistsException | NoRepositoryException e) {
             e.printStackTrace();
         }
     }
@@ -242,13 +220,7 @@ public class Main {
         try {
             VcsManager manager = new VcsManager(rootPath);
             manager.checkout(revision);
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (NoRevisionExistsException e) {
-            e.printStackTrace();
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
-        } catch (NoRepositoryException e) {
+        } catch (IOException | NoRevisionExistsException | ClassNotFoundException | NoRepositoryException e) {
             e.printStackTrace();
         }
     }
@@ -266,13 +238,7 @@ public class Main {
         try {
             VcsManager manager = new VcsManager(rootPath);
             manager.deleteBranch(branchName);
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (NoBranchExistsException e) {
-            e.printStackTrace();
-        } catch (CannotDeleteCurrentBranchException e) {
-            e.printStackTrace();
-        } catch (NoRepositoryException e) {
+        } catch (IOException | NoBranchExistsException | NoRepositoryException | CannotDeleteCurrentBranchException e) {
             e.printStackTrace();
         }
     }
@@ -292,9 +258,7 @@ public class Main {
             } else {
                 System.out.println("Current hash of commit : " + currentHead);
             }
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (NoRepositoryException e) {
+        } catch (IOException | NoRepositoryException e) {
             e.printStackTrace();
         }
     }
@@ -307,11 +271,7 @@ public class Main {
         try {
             VcsManager manager = new VcsManager(rootPath);
             manager.getLog().printLog();
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
-        } catch (NoRepositoryException e) {
+        } catch (IOException | ClassNotFoundException | NoRepositoryException e) {
             e.printStackTrace();
         }
     }
@@ -329,13 +289,7 @@ public class Main {
         try {
             VcsManager manager = new VcsManager(rootPath);
             manager.merge(branchName);
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (NotRegularFileException e) {
-            e.printStackTrace();
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
-        } catch (NoRepositoryException e) {
+        } catch (IOException | NotRegularFileException | ClassNotFoundException | NoRepositoryException e) {
             e.printStackTrace();
         }
     }
@@ -348,15 +302,8 @@ public class Main {
         try {
             VcsManager manager = new VcsManager(rootPath);
             manager.status();
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (NoRootDirectoryExistsException e) {
-            e.printStackTrace();
-        } catch (NotRegularFileException e) {
-            e.printStackTrace();
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
-        } catch (NoRepositoryException e) {
+        } catch (IOException | NoRootDirectoryExistsException |
+                 ClassNotFoundException | NotRegularFileException | NoRepositoryException e) {
             e.printStackTrace();
         }
     }
@@ -369,15 +316,8 @@ public class Main {
         try {
             VcsManager manager = new VcsManager(rootPath);
             manager.clean();
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (NoRootDirectoryExistsException e) {
-            e.printStackTrace();
-        } catch (NotRegularFileException e) {
-            e.printStackTrace();
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
-        } catch (NoRepositoryException e) {
+        } catch (IOException | NoRootDirectoryExistsException |
+                 ClassNotFoundException | NotRegularFileException | NoRepositoryException e) {
             e.printStackTrace();
         }
     }

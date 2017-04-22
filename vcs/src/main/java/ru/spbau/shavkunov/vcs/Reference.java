@@ -26,17 +26,13 @@ public class Reference {
     /**
      * Создание объекта ссылки репозитория. Если в head лежит название ветки, то это будет стандартной ссылкой, иначе
      * ссылке будет хранится только хеш текущего коммита.
-     * @param repository репозиторий, где создается ссылка.
+     * @param name имя ссылки
+     * @param commitHash имя коммита, на который указывает ссылка.
      * @throws IOException исключение, если возникли проблемы с чтением файла.
      */
-    public Reference(@NotNull Repository repository) throws IOException {
-        name = repository.getCurrentHead();
-        if (repository.isBranchExists(name)) {
-            commitHash = repository.getReferenceCommitHash(name);
-        } else {
-            commitHash = name;
-            name = "Commit hash";
-        }
+    public Reference(@NotNull String name, @NotNull String commitHash) throws IOException {
+        this.name = name;
+        this.commitHash = commitHash;
 
         logger.debug("Created reference. Commit hash : " + commitHash);
     }
