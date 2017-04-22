@@ -1,5 +1,6 @@
 package ru.spbau.shavkunov.vcs;
 
+import org.jetbrains.annotations.NotNull;
 import ru.spbau.shavkunov.vcs.exceptions.NoRootDirectoryExistsException;
 
 import java.io.File;
@@ -15,17 +16,17 @@ public class FilesTree implements Tree {
     /**
      * Файлы в текущей директории.
      */
-    private HashSet<String> files;
+    private @NotNull HashSet<String> files;
 
     /**
      * Директории в текущей директории.
      */
-    private HashSet<FilesTree> subTrees;
+    private @NotNull HashSet<FilesTree> subTrees;
 
     /**
      * Название текущей директории.
      */
-    private String prefix;
+    private @NotNull String prefix;
 
     /**
      * Создание дерева файлов.
@@ -33,7 +34,7 @@ public class FilesTree implements Tree {
      * @param exceptFiles файлы, которые не должны входить в дерево файлов.
      * @throws NoRootDirectoryExistsException исключение, если не существует корневой директории.
      */
-    public FilesTree(Path rootPath, HashSet<String> exceptFiles) throws NoRootDirectoryExistsException {
+    public FilesTree(@NotNull Path rootPath, @NotNull HashSet<String> exceptFiles) throws NoRootDirectoryExistsException {
         // перенести создание в datastore
         files = new HashSet<>();
         subTrees = new HashSet<>();
@@ -61,7 +62,7 @@ public class FilesTree implements Tree {
      * @param prefix название текущей директории.
      * @throws NoRootDirectoryExistsException исключение, если не существует корневой директории.
      */
-    private FilesTree(Path rootPath, String prefix, HashSet<String> exceptFiles) throws NoRootDirectoryExistsException {
+    private FilesTree(@NotNull Path rootPath, @NotNull String prefix, @NotNull HashSet<String> exceptFiles) throws NoRootDirectoryExistsException {
         this(rootPath, exceptFiles);
         this.prefix = prefix;
     }
@@ -84,7 +85,7 @@ public class FilesTree implements Tree {
 
     // TODO : ссылка на интерфейс
     @Override
-    public boolean isFileExists(Path pathToFile) {
+    public boolean isFileExists(@NotNull Path pathToFile) {
         return subTrees.stream().anyMatch(t -> t.isFileExists(pathToFile));
     }
 
@@ -92,7 +93,7 @@ public class FilesTree implements Tree {
      * Получение всех файлов, которые находятся в текущей структуре файлов.
      * @return HashSet всех путей файлов.
      */
-    public HashSet<String> getAllFiles() {
+    public @NotNull HashSet<String> getAllFiles() {
         HashSet<String> result = new HashSet<>();
         result.addAll(files);
 

@@ -30,7 +30,7 @@ public class Utils {
      * @return первая строчка данного файла.
      * @throws IOException исключение, если возникли проблемы с чтением файлов.
      */
-    public static String getFirstLine(@NotNull Path pathToFile) throws IOException {
+    public static @NotNull String getFirstLine(@NotNull Path pathToFile) throws IOException {
         BufferedReader reader = new BufferedReader(new FileReader(pathToFile.toFile()));
         String line = reader.readLine();
         if (line == null) {

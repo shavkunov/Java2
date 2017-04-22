@@ -17,9 +17,9 @@ import java.nio.file.Paths;
 public class Blob extends VcsObjectWithHash {
     private static final @NotNull Logger logger = LoggerFactory.getLogger(Blob.class);
 
-    private String pathToFile;
+    private @NotNull String pathToFile;
 
-    public Path getPathToFile() {
+    public @NotNull Path getPathToFile() {
         return Paths.get(pathToFile);
     }
 
@@ -40,7 +40,7 @@ public class Blob extends VcsObjectWithHash {
     }
 
     @Override
-    public byte[] getContent() throws IOException {
+    public @NotNull byte[] getContent() throws IOException {
         return Files.readAllBytes(getPathToFile());
     }
 }

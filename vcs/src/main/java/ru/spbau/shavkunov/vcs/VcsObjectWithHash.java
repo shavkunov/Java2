@@ -1,6 +1,7 @@
 package ru.spbau.shavkunov.vcs;
 
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.io.Serializable;
@@ -12,11 +13,11 @@ public abstract class VcsObjectWithHash implements Serializable {
     /**
      * Хеш объекта.
      */
-    protected @NotNull String hash;
+    protected @Nullable String hash;
 
-    public @NotNull String getHash() {
+    public @Nullable String getHash() {
         return hash;
     }
 
-    abstract byte[] getContent() throws IOException;
+    abstract @NotNull byte[] getContent() throws IOException;
 }

@@ -1,5 +1,7 @@
-##Version Control System. 
-###Usage:
+## Version Control System. 
+
+### Usage:
+
 * init [< path to repository >]
 * add < path to file >
 * rm < path to file >

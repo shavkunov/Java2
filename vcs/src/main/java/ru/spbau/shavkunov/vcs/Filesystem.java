@@ -101,9 +101,7 @@ public class Filesystem implements Datastore {
         this.rootDirectory = rootDirectory;
     }
 
-    public Filesystem() {
-
-    }
+    public Filesystem() {}
 
     @Override
     public void writeHead(@NotNull String revision) throws IOException {
@@ -176,7 +174,7 @@ public class Filesystem implements Datastore {
      * Получение ссылки на файл index.
      * @return путь к файлу index.
      */
-    public  @NotNull Path getIndexPath() {
+    public @NotNull Path getIndexPath() {
         return rootDirectory.resolve(INDEX_FILE);
     }
 

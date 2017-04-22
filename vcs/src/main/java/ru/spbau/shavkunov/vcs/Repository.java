@@ -143,7 +143,6 @@ public class Repository {
     /**
      * Создание репозитория.
      * @param path путь к репозиторию
-     * @return Инстанс класса Repository
      * @throws IOException исключение, если возникли проблемы с чтением файла или файл не оказался директорией.
      * @throws NoRepositoryException исключение, если по данному пути нет репозитория.
      */
@@ -232,15 +231,15 @@ public class Repository {
         data.storeReference(name, commitHash);
     }
 
-    public Commit getCommit(@NotNull String hash) throws IOException, ClassNotFoundException {
+    public @NotNull Commit getCommit(@NotNull String hash) throws IOException, ClassNotFoundException {
         return data.getCommitByHash(hash);
     }
 
-    public VcsTree getTree(@NotNull String hash) throws IOException, ClassNotFoundException {
+    public @NotNull VcsTree getTree(@NotNull String hash) throws IOException, ClassNotFoundException {
         return data.getTreeByHash(hash);
     }
 
-    public String getReferenceCommitHash(String referenceName) throws IOException {
+    public @NotNull String getReferenceCommitHash(@NotNull String referenceName) throws IOException {
         return data.getReferenceCommitHash(referenceName);
     }
 
@@ -250,7 +249,7 @@ public class Repository {
         data.updateIndex(index);
     }
 
-    public Path getRootDirectory() {
+    public @NotNull Path getRootDirectory() {
         return data.getRootDirectory();
     }
 
@@ -270,7 +269,7 @@ public class Repository {
         }
     }
 
-    public FilesTree getFilesTree(@NotNull HashSet<String> excludeFiles) throws NoRootDirectoryExistsException {
+    public @NotNull FilesTree getFilesTree(@NotNull HashSet<String> excludeFiles) throws NoRootDirectoryExistsException {
         return data.getFilesTree(excludeFiles);
     }
 

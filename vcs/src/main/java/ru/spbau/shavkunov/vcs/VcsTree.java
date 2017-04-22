@@ -2,6 +2,7 @@ package ru.spbau.shavkunov.vcs;
 
 import org.apache.commons.codec.digest.DigestUtils;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.*;
 import java.nio.file.Path;
@@ -102,7 +103,7 @@ public class VcsTree extends VcsObjectWithHash implements Tree, Serializable, Co
      * @param pathToFile путь к файлу
      * @return хеш файла, если такой в дереве нашелся, иначе null.
      */
-    private String getFileHash(Path rootPath, Path pathToFile) {
+    private @Nullable String getFileHash(Path rootPath, Path pathToFile) {
         for (ObjectWithName<Blob> blob : blobFiles) {
             if (blob.getName().equals(pathToFile.toString())) {
                 return blob.getContent().getHash();
@@ -124,7 +125,7 @@ public class VcsTree extends VcsObjectWithHash implements Tree, Serializable, Co
      * @param pathToFile путь к хешу.
      * @return null, если файла нет в дереве, иначе его хеш.
      */
-    public String getFileHash(Path pathToFile) {
+    public @Nullable String getFileHash(Path pathToFile) {
         return getFileHash(Paths.get("."), pathToFile);
     }
 
@@ -150,7 +151,7 @@ public class VcsTree extends VcsObjectWithHash implements Tree, Serializable, Co
      * @return true, если файл присутствует, иначе false
      */
     @Override
-    public boolean isFileExists(Path pathToFile) {
+    public boolean isFileExists(@NotNull Path pathToFile) {
         return getFileHash(pathToFile) != null;
     }
 
@@ -198,7 +199,7 @@ public class VcsTree extends VcsObjectWithHash implements Tree, Serializable, Co
      * Слияние с другим деревом.
      * @param vcsTree дерево, которое вливается в текущее.
      */
-    public void mergeWith(VcsTree vcsTree) {
+    public void mergeWith(@NotNull VcsTree vcsTree) {
         for (ObjectWithName<Blob> blob : vcsTree.getBlobFiles()) {
             blobFiles.add(blob);
         }

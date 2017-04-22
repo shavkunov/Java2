@@ -286,7 +286,7 @@ public class VcsManager {
      * @param tree дерево файлов.
      * @return множество путей к файлам.
      */
-    private Set<String> getFilesNames(@NotNull VcsTree tree) {
+    private @NotNull Set<String> getFilesNames(@NotNull VcsTree tree) {
         return tree.getAllFiles()
                    .stream()
                    .map(blobObjectWithName -> blobObjectWithName.getName())
@@ -298,7 +298,7 @@ public class VcsManager {
      * @param tree дерево файлов.
      * @return отображение из пути к файла к его хешу.
      */
-    private Map<String, String> getPathWithHashes(@NotNull VcsTree tree) {
+    private @NotNull Map<String, String> getPathWithHashes(@NotNull VcsTree tree) {
         return tree.getAllFiles()
                    .stream()
                    .collect(Collectors.toMap(ObjectWithName::getName,
