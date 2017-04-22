@@ -21,6 +21,9 @@ public class Repository {
     @NotNull
     private static final Logger logger = LoggerFactory.getLogger(Repository.class);
 
+    /**
+     * Инстанс класса для работы с данными.
+     */
     private @NotNull Datastore data;
 
     /**
@@ -28,12 +31,22 @@ public class Repository {
      */
     private @NotNull Map<Path, String> index;
 
+    /**
+     * Создание репозитория с файловым представляем VCS.
+     * @param fileSystem реализация хранения информации на файлах.
+     * @throws IOException исключение, если возникли проблемы с чтением файла.
+     */
     public Repository(@NotNull Filesystem fileSystem) throws IOException {
         data = fileSystem;
         index = data.readIndex();
     }
 
-    public static void initResources(@NotNull Path pathToRepo) throws IOException, NoRepositoryException {
+    /**
+     * Инициализация ресурсов репозитория.
+     * @param pathToRepo папка, где будет располагаться репозиторий.
+     * @throws IOException исключение, если возникли проблемы с чтением файла.
+     */
+    public static void initResources(@NotNull Path pathToRepo) throws IOException {
         new Filesystem().initResources(pathToRepo);
     }
 
@@ -223,32 +236,71 @@ public class Repository {
         data.storeObject(blob);
     }
 
+    /**
+     * Сохранение объекта в системе контроля версий.
+     * @param object объект, который нужно сохранить.
+     * @throws IOException исключение, если возникли проблемы с чтением файла.
+     */
     public void storeObject(@NotNull VcsObjectWithHash object) throws IOException {
         data.storeObject(object);
     }
 
+    /**
+     * Обновление коммита, на который указывает ссылка.
+     * @param name имя ссылки, которой нужно обновить хеш коммита.
+     * @param commitHash хеш коммита, на который будет указывать ссылка.
+     * @throws IOException исключение, если возникли проблемы с чтением файла.
+     */
     public void storeReferenceCommit(@NotNull String name, @NotNull String commitHash) throws IOException {
         data.storeReference(name, commitHash);
     }
 
+    /**
+     * Получение коммита по его хешу.
+     * @param hash хеш коммита.
+     * @return инстанс класса Commit с хешом из VCS.
+     * @throws IOException исключение, если возникли проблемы с чтением файлов.
+     * @throws ClassNotFoundException исключение, если не удалось интерпретировать данные(хеш не коммита).
+     */
     public @NotNull Commit getCommit(@NotNull String hash) throws IOException, ClassNotFoundException {
         return data.getCommitByHash(hash);
     }
 
+    /**
+     * Получение дерева по его хешу.
+     * @param hash хеш дерева
+     * @return дерево файлов из VCS.
+     * @throws IOException исключение, если возникли проблемы с чтением файлов.
+     * @throws ClassNotFoundException исключение, если не удалось интерпретировать данные(хеш не дерева).
+     */
     public @NotNull VcsTree getTree(@NotNull String hash) throws IOException, ClassNotFoundException {
         return data.getTreeByHash(hash);
     }
 
+    /**
+     * Получение коммита, на который указывает ссылка.
+     * @param referenceName имя ссылки.
+     * @return хеш коммита, который содержится в ссылке.
+     * @throws IOException исключение, если возникли проблемы с чтением файлов.
+     */
     public @NotNull String getReferenceCommitHash(@NotNull String referenceName) throws IOException {
         return data.getReferenceCommitHash(referenceName);
     }
 
+    /**
+     * Восстановление файлов до состояния дерева коммита.
+     * @param tree дерево файлов коммита.
+     * @throws IOException исключение, если возникли проблемы с чтением файлов.
+     */
     public void restoreTree(@NotNull VcsTree tree) throws IOException {
         index = new HashMap<>();
         data.addTree(tree, data.getRootDirectory());
         data.updateIndex(index);
     }
 
+    /**
+     * {@link Datastore#getRootDirectory()}
+     */
     public @NotNull Path getRootDirectory() {
         return data.getRootDirectory();
     }
@@ -269,10 +321,23 @@ public class Repository {
         }
     }
 
+    /**
+     * Создание дерева файлов.
+     * @param excludeFiles файлы, которые не должны входить в дерево файлов.
+     * @throws NoRootDirectoryExistsException исключение, если не существует корневой директории.
+     */
     public @NotNull FilesTree getFilesTree(@NotNull HashSet<String> excludeFiles) throws NoRootDirectoryExistsException {
         return data.getFilesTree(excludeFiles);
     }
 
+    /**
+     * Реализация команды clean. Удаление всех файлов, не находящихся под контролем системы версий.
+     * @param untrackedFiles файлы, которые не находятся под контролем.
+     * @throws NoRootDirectoryExistsException исключение, если не была найдена корневая директория репозитория.
+     * @throws IOException исключение, если возникли проблемы с файлом.
+     * @throws NotRegularFileException исключение, если ожидали файл, а получили директорию.
+     * @throws ClassNotFoundException исключение, если невозможно интерпретировать данные.
+     */
     public void clean(@NotNull HashSet<String> untrackedFiles) throws ClassNotFoundException, NotRegularFileException,
                                                                 NoRootDirectoryExistsException, IOException {
         data.clean(untrackedFiles);

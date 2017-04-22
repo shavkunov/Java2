@@ -19,6 +19,9 @@ import java.util.*;
 import static ru.spbau.shavkunov.vcs.Constants.*;
 import static ru.spbau.shavkunov.vcs.Constants.DEFAULT_BRANCH_NAME;
 
+/**
+ * Класс, реализующий сохранение объектов VCS посредством файлов.
+ */
 public class Filesystem implements Datastore {
     /**
      * Логгер этого класса.
@@ -86,7 +89,13 @@ public class Filesystem implements Datastore {
     public Path getRootDirectory() {
         return rootDirectory;
     }
-    
+
+    /**
+     * Создание объекта и проверка валидности ссылки на репозиторий.
+     * @param rootDirectory ссылка на место, где должен находится созданный репозиторий
+     * @throws NoRepositoryException исключение, если путь указывает на место, где нет репозитория.
+     * @throws NotDirectoryException путь к репозиторию оказался не директорией.
+     */
     public Filesystem(@NotNull Path rootDirectory) throws NoRepositoryException, NotDirectoryException {
         if (!Files.isDirectory(rootDirectory)) {
             throw new NotDirectoryException(rootDirectory.toString());
@@ -101,6 +110,9 @@ public class Filesystem implements Datastore {
         this.rootDirectory = rootDirectory;
     }
 
+    /**
+     * Создание объекта для инициализации ресурсов.
+     */
     public Filesystem() {}
 
     @Override
@@ -210,6 +222,10 @@ public class Filesystem implements Datastore {
         return head;
     }
 
+    /**
+     * Получение пути к head файлу.
+     * @return путь к head файлу.
+     */
     private @NotNull Path getHeadPath() {
         return rootDirectory.resolve(HEAD);
     }
@@ -291,6 +307,7 @@ public class Filesystem implements Datastore {
 
     /**
      * Реализация команды clean. Удаление всех файлов, не находящихся под контролем системы версий.
+     * @param untrackedFiles файлы, которые не находятся под контролем.
      * @throws NoRootDirectoryExistsException исключение, если не была найдена корневая директория репозитория.
      * @throws IOException исключение, если возникли проблемы с файлом.
      * @throws NotRegularFileException исключение, если ожидали файл, а получили директорию.

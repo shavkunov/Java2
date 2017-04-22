@@ -35,7 +35,6 @@ public class FilesTree implements Tree {
      * @throws NoRootDirectoryExistsException исключение, если не существует корневой директории.
      */
     public FilesTree(@NotNull Path rootPath, @NotNull HashSet<String> exceptFiles) throws NoRootDirectoryExistsException {
-        // перенести создание в datastore
         files = new HashSet<>();
         subTrees = new HashSet<>();
 
@@ -67,7 +66,6 @@ public class FilesTree implements Tree {
         this.prefix = prefix;
     }
 
-    // TODO : ссылка на интерфейс
     @Override
     public void printTree(int spaces) {
         String indent = Utils.multiply("-", spaces + 1);
@@ -83,7 +81,6 @@ public class FilesTree implements Tree {
         }
     }
 
-    // TODO : ссылка на интерфейс
     @Override
     public boolean isFileExists(@NotNull Path pathToFile) {
         return subTrees.stream().anyMatch(t -> t.isFileExists(pathToFile));

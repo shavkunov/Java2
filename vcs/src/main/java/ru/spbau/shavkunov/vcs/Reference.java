@@ -52,6 +52,10 @@ public class Reference {
         commitHash = repository.getReferenceCommitHash(name);
     }
 
+    /**
+     * Получение хеша коммита ссылки.
+     * @return хеш коммита.
+     */
     public @NotNull String getCommitHash() {
         return commitHash;
     }

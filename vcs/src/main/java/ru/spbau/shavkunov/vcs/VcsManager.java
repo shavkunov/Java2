@@ -1,7 +1,6 @@
 package ru.spbau.shavkunov.vcs;
 
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ru.spbau.shavkunov.vcs.exceptions.*;
@@ -34,21 +33,24 @@ public class VcsManager {
     /**
      * Добавленные файлы.
      */
-    private @Nullable ArrayList<String> stagedFiles;
+    private @NotNull ArrayList<String> stagedFiles;
 
     /**
      * Удаленные файлы.
      */
-    private @Nullable ArrayList<String> deletedFiles;
+    private @NotNull ArrayList<String> deletedFiles;
 
     /**
      * Измененные файлы.
      */
-    private @Nullable ArrayList<String> modifiedFiles;
+    private @NotNull ArrayList<String> modifiedFiles;
 
     public VcsManager(@NotNull Path pathToRepo) throws IOException, NoRepositoryException {
         logger.debug("---------------------------Manager was created---------------------------");
         this.repository = new Repository(pathToRepo);
+        modifiedFiles = new ArrayList<>();
+        deletedFiles = new ArrayList<>();
+        stagedFiles = new ArrayList<>();
     }
 
     /**
@@ -186,7 +188,7 @@ public class VcsManager {
     }
 
     /**
-     * Восстановление состояние репозитория по коммиту.
+     * Восстановление состояния репозитория по коммиту.
      * @param commitHash в хеше этого коммита находится восстанавливаемое состояние репозитория.
      * @throws IOException исключение, если возникли проблемы с чтением файла.
      * @throws ClassNotFoundException если возникли проблемы с десериализацией.
@@ -338,6 +340,12 @@ public class VcsManager {
         }
     }
 
+    /**
+     * Получение дерева от текущего коммита.
+     * @return инстанс класса дерева.
+     * @throws IOException исключение, если возникли проблемы с чтением файлов.
+     * @throws ClassNotFoundException исключение, если невозможно интерпретировать данные.
+     */
     private @NotNull VcsTree getTreeOfCurrentCommit() throws IOException, ClassNotFoundException {
         Reference reference = new Reference(repository);
         Commit commit = repository.getCommit(reference.getCommitHash());
@@ -410,9 +418,6 @@ public class VcsManager {
 
         Map<String, String> currentMap = getPathWithHashes(currentVcsTree);
         Map<String, String> commitMap = getPathWithHashes(commitVcsTree);
-        modifiedFiles = new ArrayList<>();
-        deletedFiles = new ArrayList<>();
-        stagedFiles = new ArrayList<>();
 
         for (String path : currentMap.keySet()) {
             if (commitMap.containsKey(path)) {

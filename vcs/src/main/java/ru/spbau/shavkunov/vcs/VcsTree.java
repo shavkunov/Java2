@@ -35,10 +35,18 @@ public class VcsTree extends VcsObjectWithHash implements Tree, Serializable, Co
      */
     private static int DEFAULT_INDENT = 2;
 
+    /**
+     * Получение папки, где находится дерево.
+     * @return название папки.
+     */
     public @NotNull String getPrefix() {
         return prefix;
     }
 
+    /**
+     * Создание пустого дерева.
+     * @param prefix название корневой для дерева папки.
+     */
     public VcsTree(@NotNull Path prefix) {
         blobFiles = new ArrayList<>();
         vcsTreeFiles = new ArrayList<>();
@@ -129,7 +137,6 @@ public class VcsTree extends VcsObjectWithHash implements Tree, Serializable, Co
         return getFileHash(Paths.get("."), pathToFile);
     }
 
-    // TODO : ссылка на интерфейс
     @Override
     public void printTree(int spaces) {
         String indent = Utils.multiply("-", spaces + 1);
@@ -155,10 +162,18 @@ public class VcsTree extends VcsObjectWithHash implements Tree, Serializable, Co
         return getFileHash(pathToFile) != null;
     }
 
+    /**
+     * Получение всех blob файлов с их путями в дереве.
+     * @return список blob файлов с их путями.
+     */
     public @NotNull ArrayList<ObjectWithName<Blob>> getBlobFiles() {
         return blobFiles;
     }
 
+    /**
+     * Получение всех поддеревьев в текущем дереве.
+     * @return список всех поддеревьев.
+     */
     public @NotNull ArrayList<VcsTree> getVcsTreeFiles() {
         return vcsTreeFiles;
     }

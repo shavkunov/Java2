@@ -41,6 +41,10 @@ public class VcsLog {
         System.out.println(message);
     }
 
+    /**
+     * Получение коммитов, которые нужно вывести.
+     * @return список коммитов.
+     */
     public @NotNull ArrayList<Commit> getCommits() {
         return commits;
     }

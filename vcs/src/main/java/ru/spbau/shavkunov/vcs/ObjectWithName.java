@@ -5,11 +5,18 @@ import org.jetbrains.annotations.NotNull;
 import java.io.Serializable;
 
 /**
- * Обертка над объектов, добавляемая ему имя.
+ * Обертка над объектом, которая приписывает ему имя.
  * @param <T> тип объекта, к которому приписываем имя.
  */
 public class ObjectWithName<T> implements Comparable<ObjectWithName<?>>, Serializable {
+    /**
+     * Сам объект, который хранится внутри.
+     */
     private @NotNull T object;
+
+    /**
+     * И его имя.
+     */
     private @NotNull String name;
 
     public ObjectWithName(@NotNull T object, @NotNull String name) {
@@ -17,10 +24,18 @@ public class ObjectWithName<T> implements Comparable<ObjectWithName<?>>, Seriali
         this.name = name;
     }
 
+    /**
+     * Получение внутреннего объекта.
+     * @return объект.
+     */
     public @NotNull T getContent() {
         return object;
     }
 
+    /**
+     * Получение имени объекта
+     * @return имя объекта.
+     */
     public @NotNull String getName() {
         return name;
     }

@@ -17,8 +17,15 @@ import java.nio.file.Paths;
 public class Blob extends VcsObjectWithHash {
     private static final @NotNull Logger logger = LoggerFactory.getLogger(Blob.class);
 
+    /**
+     * Путь к файлу пользователя.
+     */
     private @NotNull String pathToFile;
 
+    /**
+     * Получение пути к файлу.
+     * @return возвращает путь к файлу.
+     */
     public @NotNull Path getPathToFile() {
         return Paths.get(pathToFile);
     }

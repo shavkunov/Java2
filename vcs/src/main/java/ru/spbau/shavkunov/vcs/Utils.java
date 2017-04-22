@@ -7,6 +7,9 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.nio.file.Path;
 
+/**
+ * Вспомогательный класс с методами, которые могут быть использоваными другими классами.
+ */
 public class Utils {
     /**
      * Клонирование строки.

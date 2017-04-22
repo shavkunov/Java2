@@ -15,9 +15,18 @@ public abstract class VcsObjectWithHash implements Serializable {
      */
     protected @Nullable String hash;
 
+    /**
+     * Получение хеша у объекта.
+     * @return хеш объекта.
+     */
     public @Nullable String getHash() {
         return hash;
     }
 
+    /**
+     * Получение содержимого объекта в виде массива байтов.
+     * @return содержимого объекта.
+     * @throws IOException исключение, если возникли проблемы с чтением файла.
+     */
     abstract @NotNull byte[] getContent() throws IOException;
 }

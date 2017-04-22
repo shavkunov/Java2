@@ -80,18 +80,34 @@ public class Commit extends VcsObjectWithHash {
         hash = commitHash;
     }
 
+    /**
+     * Получение даты коммита.
+     * @return возвращает дату коммита.
+     */
     public @NotNull Date getDate() {
         return date;
     }
 
+    /**
+     * Получение автора коммита.
+     * @return возвращает автора коммита.
+     */
     public @NotNull String getAuthor() {
         return author;
     }
 
+    /**
+     * Получение сообщения коммита.
+     * @return возвращает сообщение коммита.
+     */
     public @NotNull String getMessage() {
         return message;
     }
 
+    /**
+     * Получение хеша дерева коммита.
+     * @return возвращает хеш дерева коммита.
+     */
     public @NotNull String getTreeHash() {
         return treeHash;
     }
@@ -115,6 +131,10 @@ public class Commit extends VcsObjectWithHash {
         return res;
     }
 
+    /**
+     * Получение коммитов предков текущего коммита.
+     * @return возвращает предков коммита.
+     */
     public @NotNull List<String> getParentCommits() {
         return parentCommits;
     }
