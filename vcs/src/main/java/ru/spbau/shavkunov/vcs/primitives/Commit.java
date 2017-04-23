@@ -1,4 +1,4 @@
-package ru.spbau.shavkunov.vcs;
+package ru.spbau.shavkunov.vcs.primitives;
 
 import org.apache.commons.codec.digest.DigestUtils;
 import org.jetbrains.annotations.NotNull;

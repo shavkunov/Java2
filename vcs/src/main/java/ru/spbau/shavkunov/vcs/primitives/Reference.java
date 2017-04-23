@@ -1,8 +1,9 @@
-package ru.spbau.shavkunov.vcs;
+package ru.spbau.shavkunov.vcs.primitives;
 
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import ru.spbau.shavkunov.vcs.VcsManager;
 
 import java.io.IOException;
 
@@ -54,6 +55,14 @@ public class Reference {
      */
     public @NotNull String getCommitHash() {
         return commitHash;
+    }
+
+    /**
+     * Получение имени ссылки.
+     * @return имя ссылки.
+     */
+    public String getName() {
+        return name;
     }
 
     /**

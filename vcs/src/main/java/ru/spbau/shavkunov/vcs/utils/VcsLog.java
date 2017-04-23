@@ -1,6 +1,7 @@
-package ru.spbau.shavkunov.vcs;
+package ru.spbau.shavkunov.vcs.utils;
 
 import org.jetbrains.annotations.NotNull;
+import ru.spbau.shavkunov.vcs.primitives.Commit;
 
 import java.util.ArrayList;
 import java.util.Comparator;

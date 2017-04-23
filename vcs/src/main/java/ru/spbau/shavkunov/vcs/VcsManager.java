@@ -5,6 +5,10 @@ import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ru.spbau.shavkunov.vcs.exceptions.*;
+import ru.spbau.shavkunov.vcs.trees.FilesTree;
+import ru.spbau.shavkunov.vcs.trees.VcsTree;
+import ru.spbau.shavkunov.vcs.utils.VcsLog;
+import ru.spbau.shavkunov.vcs.primitives.*;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -14,7 +18,7 @@ import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static ru.spbau.shavkunov.vcs.Constants.*;
+import static ru.spbau.shavkunov.vcs.utils.Constants.*;
 
 /**
  * Класс отвечающий за реализацию комманд.

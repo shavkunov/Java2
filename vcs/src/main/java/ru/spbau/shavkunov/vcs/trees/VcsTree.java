@@ -1,8 +1,12 @@
-package ru.spbau.shavkunov.vcs;
+package ru.spbau.shavkunov.vcs.trees;
 
 import org.apache.commons.codec.digest.DigestUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import ru.spbau.shavkunov.vcs.primitives.ObjectWithName;
+import ru.spbau.shavkunov.vcs.utils.Utils;
+import ru.spbau.shavkunov.vcs.primitives.VcsObjectWithHash;
+import ru.spbau.shavkunov.vcs.primitives.Blob;
 
 import java.io.*;
 import java.nio.file.Path;

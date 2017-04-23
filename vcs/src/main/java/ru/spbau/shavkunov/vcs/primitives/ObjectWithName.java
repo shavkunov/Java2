@@ -1,4 +1,4 @@
-package ru.spbau.shavkunov.vcs;
+package ru.spbau.shavkunov.vcs.primitives;
 
 import org.jetbrains.annotations.NotNull;
 

@@ -1,4 +1,4 @@
-package ru.spbau.shavkunov.vcs;
+package ru.spbau.shavkunov.vcs.primitives;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -28,5 +28,5 @@ public abstract class VcsObjectWithHash implements Serializable {
      * @return содержимого объекта.
      * @throws IOException исключение, если возникли проблемы с чтением файла.
      */
-    abstract @NotNull byte[] getContent() throws IOException;
+    public abstract @NotNull byte[] getContent() throws IOException;
 }

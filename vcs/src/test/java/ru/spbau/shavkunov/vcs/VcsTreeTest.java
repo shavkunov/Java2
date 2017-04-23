@@ -5,6 +5,9 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import ru.spbau.shavkunov.vcs.exceptions.NotRegularFileException;
+import ru.spbau.shavkunov.vcs.trees.VcsTree;
+import ru.spbau.shavkunov.vcs.primitives.ObjectWithName;
+import ru.spbau.shavkunov.vcs.primitives.Repository;
 
 import java.io.IOException;
 import java.util.stream.Collectors;

@@ -1,10 +1,15 @@
-package ru.spbau.shavkunov.vcs;
+package ru.spbau.shavkunov.vcs.data;
 
 import org.jetbrains.annotations.NotNull;
+import ru.spbau.shavkunov.vcs.primitives.VcsObjectWithHash;
 import ru.spbau.shavkunov.vcs.exceptions.BranchAlreadyExistsException;
 import ru.spbau.shavkunov.vcs.exceptions.NoRootDirectoryExistsException;
 import ru.spbau.shavkunov.vcs.exceptions.NotRegularFileException;
 import ru.spbau.shavkunov.vcs.exceptions.RepositoryAlreadyExistsException;
+import ru.spbau.shavkunov.vcs.trees.FilesTree;
+import ru.spbau.shavkunov.vcs.trees.VcsTree;
+import ru.spbau.shavkunov.vcs.primitives.Commit;
+import ru.spbau.shavkunov.vcs.primitives.Repository;
 
 import java.io.IOException;
 import java.nio.file.Path;

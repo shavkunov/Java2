@@ -4,7 +4,14 @@ import org.apache.commons.io.FileUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import ru.spbau.shavkunov.vcs.data.Filesystem;
 import ru.spbau.shavkunov.vcs.exceptions.*;
+import ru.spbau.shavkunov.vcs.trees.VcsTree;
+import ru.spbau.shavkunov.vcs.utils.Utils;
+import ru.spbau.shavkunov.vcs.utils.VcsLog;
+import ru.spbau.shavkunov.vcs.primitives.Commit;
+import ru.spbau.shavkunov.vcs.primitives.Reference;
+import ru.spbau.shavkunov.vcs.primitives.Repository;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -17,7 +24,7 @@ import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.*;
-import static ru.spbau.shavkunov.vcs.Constants.*;
+import static ru.spbau.shavkunov.vcs.utils.Constants.*;
 import static ru.spbau.shavkunov.vcs.TestConstants.pathToFile;
 import static ru.spbau.shavkunov.vcs.TestConstants.rootPath;
 
@@ -53,6 +60,11 @@ public class VcsManagerTest {
         String hashFileInIndex = pathWithHash[1];
         assertEquals(hash, hashFileInIndex);
         assertEquals(pathToFile, pathToFileInIndex);
+    }
+
+    @Test(expected = NotRegularFileException.class)
+    public void addNotFileTest() throws IOException, NotRegularFileException {
+        manager.addFile(rootPath.resolve("test"));
     }
 
     @Test
@@ -116,6 +128,33 @@ public class VcsManagerTest {
         assertEquals(masterVcsTree.getHash(), testVcsTree.getHash());
     }
 
+    @Test
+    public void doubleCheckoutTest() throws IOException, NotRegularFileException,
+                                            NoRepositoryException, BranchAlreadyExistsException,
+                                            NoRevisionExistsException, ClassNotFoundException {
+        manager.addFile(rootPath.resolve("test1"));
+        manager.addFile(rootPath.resolve("test2"));
+        manager.commitChanges("me", "master 1 commit");
+        repository = new Repository(rootPath);
+
+        manager.checkoutToNewBranch("test_branch");
+        manager.addFile(rootPath.resolve("test").resolve("test3"));
+        manager.commitChanges("me", "test 1 commit");
+        VcsTree testVcsTree = repository.createTreeFromIndex();
+
+        manager.checkout("master");
+        manager.checkout("test_branch");
+        VcsTree secondTestTree = repository.createTreeFromIndex();
+
+        assertEquals(testVcsTree.getHash(), secondTestTree.getHash());
+    }
+
+    @Test(expected = BranchAlreadyExistsException.class)
+    public void createNewBranchTest() throws IOException, BranchAlreadyExistsException {
+        manager.checkoutToNewBranch("new_branch_name");
+        manager.checkoutToNewBranch("master");
+    }
+
     @Test(expected = CannotDeleteCurrentBranchException.class)
     public void deleteCurrentBranchTest() throws Exception, NotRegularFileException {
         manager.addFile(rootPath.resolve("test1"));
@@ -134,6 +173,18 @@ public class VcsManagerTest {
         manager.deleteBranch("master");
 
         assertFalse(filesystem.getReferencesPath().resolve("master").toFile().exists());
+    }
+
+    @Test(expected = NoRevisionExistsException.class)
+    public void sameDeleteBranchTest() throws CannotDeleteCurrentBranchException, NoBranchExistsException,
+                                              IOException, NoRevisionExistsException, ClassNotFoundException,
+                                              NotRegularFileException, BranchAlreadyExistsException {
+        manager.addFile(rootPath.resolve("test1"));
+        manager.addFile(rootPath.resolve("test2"));
+        manager.commitChanges("me", "master 1 commit");
+        manager.checkoutToNewBranch("test");
+        manager.deleteBranch("master");
+        manager.checkout("master");
     }
 
     @Test

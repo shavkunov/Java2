@@ -5,13 +5,14 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import ru.spbau.shavkunov.vcs.exceptions.*;
+import ru.spbau.shavkunov.vcs.primitives.Repository;
 
 import java.io.IOException;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.*;
-import static ru.spbau.shavkunov.vcs.Constants.DEFAULT_BRANCH_NAME;
-import static ru.spbau.shavkunov.vcs.Constants.VCS_FOLDER;
+import static ru.spbau.shavkunov.vcs.utils.Constants.DEFAULT_BRANCH_NAME;
+import static ru.spbau.shavkunov.vcs.utils.Constants.VCS_FOLDER;
 import static ru.spbau.shavkunov.vcs.TestConstants.pathToFile;
 import static ru.spbau.shavkunov.vcs.TestConstants.rootPath;
 
@@ -28,6 +29,14 @@ public class RepositoryTest {
         Repository repository = new Repository(rootPath);
         assertThat(repository.getRootDirectory(), is(rootPath.resolve(VCS_FOLDER)));
         assertEquals(4, repository.getRootDirectory().toFile().listFiles().length);
+
+        assertEquals("master", repository.getReference().getName());
+    }
+
+    @Test(expected = RepositoryAlreadyExistsException.class)
+    public void initRepositoryAgainTest() throws IOException, RepositoryAlreadyExistsException {
+        Repository.initResources(rootPath);
+        Repository.initResources(rootPath);
     }
 
     @Test

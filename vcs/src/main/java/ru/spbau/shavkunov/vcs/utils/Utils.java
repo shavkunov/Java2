@@ -1,4 +1,4 @@
-package ru.spbau.shavkunov.vcs;
+package ru.spbau.shavkunov.vcs.utils;
 
 import org.jetbrains.annotations.NotNull;
 
@@ -17,7 +17,7 @@ public class Utils {
      * @param amount число, отвечающие за количество клонов строки sample
      * @return размноженную строку.
      */
-    static @NotNull String multiply(@NotNull String sample, int amount) {
+    public static @NotNull String multiply(@NotNull String sample, int amount) {
         String copy = "";
 
         for (int i = 0; i < amount; i++) {

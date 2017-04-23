@@ -1,4 +1,4 @@
-package ru.spbau.shavkunov.vcs;
+package ru.spbau.shavkunov.vcs.utils;
 
 /**
  * Набор констант, необходимых для работы с репозиторием.

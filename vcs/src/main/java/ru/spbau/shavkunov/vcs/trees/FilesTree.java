@@ -1,13 +1,14 @@
-package ru.spbau.shavkunov.vcs;
+package ru.spbau.shavkunov.vcs.trees;
 
 import org.jetbrains.annotations.NotNull;
+import ru.spbau.shavkunov.vcs.utils.Utils;
 import ru.spbau.shavkunov.vcs.exceptions.NoRootDirectoryExistsException;
 
 import java.io.File;
 import java.nio.file.Path;
 import java.util.HashSet;
 
-import static ru.spbau.shavkunov.vcs.Constants.VCS_FOLDER;
+import static ru.spbau.shavkunov.vcs.utils.Constants.VCS_FOLDER;
 
 /**
  * Класс, реализующий работу со структурой файлов, не добавленных в репозиторий.

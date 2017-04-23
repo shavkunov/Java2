@@ -1,21 +1,29 @@
-package ru.spbau.shavkunov.vcs;
+package ru.spbau.shavkunov.vcs.data;
 
 import org.apache.commons.io.FileUtils;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import ru.spbau.shavkunov.vcs.primitives.ObjectWithName;
+import ru.spbau.shavkunov.vcs.primitives.VcsObjectWithHash;
 import ru.spbau.shavkunov.vcs.exceptions.*;
+import ru.spbau.shavkunov.vcs.trees.FilesTree;
+import ru.spbau.shavkunov.vcs.trees.VcsTree;
+import ru.spbau.shavkunov.vcs.utils.Utils;
+import ru.spbau.shavkunov.vcs.primitives.Blob;
+import ru.spbau.shavkunov.vcs.primitives.Commit;
 
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.NotDirectoryException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 
-import static ru.spbau.shavkunov.vcs.Constants.*;
+import static ru.spbau.shavkunov.vcs.utils.Constants.*;
 
 /**
  * Класс, реализующий сохранение объектов VCS посредством файлов.
@@ -260,7 +268,8 @@ public class Filesystem implements Datastore {
 
 
     /**
-     * Добавление в корневую папку дополнительную структуру файлов.
+     * Добавление в корневую папку дополнительную структуру файлов. Если добавляется файл с таким же именем,
+     * то он перезапишется сверх предыдущего.
      * @param vcsTree в этом объекте хранится вся структура файлов и папок.
      * @param root корневой путь, куда нужно добавить дерево
      * @throws IOException исключение, если возникли проблемы с чтением файла.
@@ -272,8 +281,15 @@ public class Filesystem implements Datastore {
             Blob blob = file.getContent();
             Path fileName = Paths.get(file.getName());
 
-            fileName.toFile().createNewFile();
             byte[] content = Files.readAllBytes(getObjectsPath().resolve(blob.getHash()));
+            if (!fileName.toFile().exists()) {
+                fileName.toFile().createNewFile();
+            } else {
+                if (!Arrays.equals(Files.readAllBytes(fileName), content)) {
+                    System.out.println("File with name : " + fileName + " has overwritten");
+                }
+            }
+
             writeContent(fileName, content);
         }
 

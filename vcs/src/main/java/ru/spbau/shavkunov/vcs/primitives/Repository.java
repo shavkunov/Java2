@@ -1,9 +1,13 @@
-package ru.spbau.shavkunov.vcs;
+package ru.spbau.shavkunov.vcs.primitives;
 
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import ru.spbau.shavkunov.vcs.data.Datastore;
+import ru.spbau.shavkunov.vcs.data.Filesystem;
 import ru.spbau.shavkunov.vcs.exceptions.*;
+import ru.spbau.shavkunov.vcs.trees.FilesTree;
+import ru.spbau.shavkunov.vcs.trees.VcsTree;
 
 import java.io.IOException;
 import java.nio.file.Files;
