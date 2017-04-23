@@ -95,9 +95,21 @@ public class Main {
             if (cmd.hasOption(BRANCH_COMMAND)) {
                 handleBranch(cmd);
             }
+
+            printUsage(options);
         } catch (ParseException e) {
-            e.printStackTrace();
+            System.out.println("Invalid command");
+            printUsage(options);
         }
+
+        if (args.length == 0) {
+            printUsage(options);
+        }
+    }
+
+    private static void printUsage(Options options) {
+        HelpFormatter formatter = new HelpFormatter();
+        formatter.printHelp("java -jar vcs-1.0-SNAPSHOT.jar", options);
     }
 
     private static Option initOption() {
@@ -109,13 +121,13 @@ public class Main {
 
     private static void handleInit(CommandLine cmd) {
         String[] initArgs = cmd.getOptionValues(INIT_COMMAND);
-        if (initArgs.length == 1) {
+        if (initArgs != null && initArgs.length == 1) {
             rootPath = Paths.get(initArgs[0]).normalize();
         }
 
         try {
             Repository.initResources(rootPath);
-        } catch (IOException e) {
+        } catch (IOException | RepositoryAlreadyExistsException e) {
             e.printStackTrace();
         }
     }

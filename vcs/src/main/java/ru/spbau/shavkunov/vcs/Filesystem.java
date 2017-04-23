@@ -4,20 +4,18 @@ import org.apache.commons.io.FileUtils;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import ru.spbau.shavkunov.vcs.exceptions.BranchAlreadyExistsException;
-import ru.spbau.shavkunov.vcs.exceptions.NoRepositoryException;
-import ru.spbau.shavkunov.vcs.exceptions.NoRootDirectoryExistsException;
-import ru.spbau.shavkunov.vcs.exceptions.NotRegularFileException;
+import ru.spbau.shavkunov.vcs.exceptions.*;
 
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.NotDirectoryException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.*;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
 
 import static ru.spbau.shavkunov.vcs.Constants.*;
-import static ru.spbau.shavkunov.vcs.Constants.DEFAULT_BRANCH_NAME;
 
 /**
  * Класс, реализующий сохранение объектов VCS посредством файлов.
@@ -35,12 +33,16 @@ public class Filesystem implements Datastore {
     private @NotNull Path rootDirectory;
 
     @Override
-    public void initResources(@NotNull Path pathToRepo) throws IOException {
+    public void initResources(@NotNull Path pathToRepo) throws IOException, RepositoryAlreadyExistsException {
         if (!Files.isDirectory(pathToRepo)) {
             throw new NotDirectoryException(pathToRepo.toString());
         }
 
         Path rootDir = pathToRepo.resolve(VCS_FOLDER).normalize();
+
+        if (rootDir.toFile().exists()) {
+            throw new RepositoryAlreadyExistsException();
+        }
 
         Files.createDirectory(rootDir);
         Files.createDirectory(rootDir.resolve(OBJECTS_FOLDER));

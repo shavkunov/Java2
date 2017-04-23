@@ -46,7 +46,7 @@ public class Repository {
      * @param pathToRepo папка, где будет располагаться репозиторий.
      * @throws IOException исключение, если возникли проблемы с чтением файла.
      */
-    public static void initResources(@NotNull Path pathToRepo) throws IOException {
+    public static void initResources(@NotNull Path pathToRepo) throws IOException, RepositoryAlreadyExistsException {
         new Filesystem().initResources(pathToRepo);
     }
 

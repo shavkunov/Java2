@@ -32,7 +32,8 @@ public class RepositoryTest {
 
     @Test
     public void branchManageTest() throws IOException, NoRepositoryException, NotRegularFileException,
-            BranchAlreadyExistsException, CannotDeleteCurrentBranchException, NoBranchExistsException {
+                                          BranchAlreadyExistsException, CannotDeleteCurrentBranchException,
+                                          NoBranchExistsException, RepositoryAlreadyExistsException {
         Repository.initResources(rootPath);
         VcsManager manager = new VcsManager(rootPath);
         Repository repository = new Repository(rootPath);

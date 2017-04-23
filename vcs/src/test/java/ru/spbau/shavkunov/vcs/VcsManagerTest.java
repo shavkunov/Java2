@@ -27,7 +27,7 @@ public class VcsManagerTest {
     private Filesystem filesystem;
 
     @Before
-    public void setUp() throws IOException, NoRepositoryException {
+    public void setUp() throws IOException, NoRepositoryException, RepositoryAlreadyExistsException {
         deleteTmpFiles();
 
         Repository.initResources(rootPath);
@@ -197,7 +197,9 @@ public class VcsManagerTest {
     }
 
     @Test
-    public void cleanTest() throws IOException, NoRepositoryException, NotRegularFileException, NoRootDirectoryExistsException, ClassNotFoundException {
+    public void cleanTest() throws IOException, NoRepositoryException,
+                                   NotRegularFileException, NoRootDirectoryExistsException,
+                                   ClassNotFoundException, RepositoryAlreadyExistsException {
         FileUtils.deleteDirectory(rootPath.resolve(VCS_FOLDER).toFile());
         Path newRootPath = rootPath.resolve("test");
 

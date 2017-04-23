@@ -4,6 +4,7 @@ import org.jetbrains.annotations.NotNull;
 import ru.spbau.shavkunov.vcs.exceptions.BranchAlreadyExistsException;
 import ru.spbau.shavkunov.vcs.exceptions.NoRootDirectoryExistsException;
 import ru.spbau.shavkunov.vcs.exceptions.NotRegularFileException;
+import ru.spbau.shavkunov.vcs.exceptions.RepositoryAlreadyExistsException;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -86,7 +87,7 @@ public interface Datastore {
      * @param rootDirectory директория, где будет хранится репозиторий.
      * @throws IOException исключение, если возникли проблемы с вводом/выводом.
      */
-    void initResources(@NotNull Path rootDirectory) throws IOException;
+    void initResources(@NotNull Path rootDirectory) throws IOException, RepositoryAlreadyExistsException;
 
     /**
      * {@link Repository#createNewBranch(String, String)}
