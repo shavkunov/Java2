@@ -10,6 +10,7 @@ import javafx.scene.control.*;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Pane;
 import javafx.scene.layout.VBox;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.Stage;
@@ -30,6 +31,9 @@ import java.util.Optional;
 
 import static ru.spbau.shavkunov.ftp.NetworkConstants.PORT;
 
+/**
+ * Graphical User Interface for client.
+ */
 public class ClientUI extends Application {
     private static final @NotNull Logger logger = LoggerFactory.getLogger(ClientUI.class);
 
@@ -78,6 +82,11 @@ public class ClientUI extends Application {
      * Label for showing download folder.
      */
     private @Nullable Label labelSelectedDirectory;
+
+    /**
+     * Button for coming back from folder.
+     */
+    private @Nullable Button backButton;
 
     @Override
     public void start(@NotNull Stage stage) throws Exception {
@@ -178,7 +187,12 @@ public class ClientUI extends Application {
      */
     private void initSceneObjects(@NotNull Scene scene, @NotNull Image[] images, @NotNull Stage stage) throws URISyntaxException {
         VBox vbox = new VBox();
-        initConnectButton(vbox, images);
+
+        HBox hBox = new HBox();
+        vbox.getChildren().add(hBox);
+
+        initConnectButton(hBox, images);
+        initBackButton(hBox, images);
         initDirectoryChooserButton(stage, vbox);
         initListView(images, vbox);
 
@@ -205,6 +219,7 @@ public class ClientUI extends Application {
                 // going to folder
                 try {
                     currentDirectory = currentDirectory.resolve(selectedItem);
+                    backButton.setDisable(false);
                     updateListView(images);
                 } catch (UnknownException e) {
                     e.printStackTrace();
@@ -276,11 +291,11 @@ public class ClientUI extends Application {
     }
 
     /**
-     * Init connect to server button in vBox.
-     * @param vbox place, where button will be located.
+     * Init connection button.
+     * @param pane place, where button will be located.
      * @param images images for files and folder.
      */
-    private void initConnectButton(@NotNull VBox vbox, @NotNull Image[] images) {
+    private void initConnectButton(@NotNull Pane pane, @NotNull Image[] images) {
         Button connectButton = new Button("Connect to server");
 
         connectButton.setOnAction(actionEvent ->  {
@@ -295,9 +310,38 @@ public class ClientUI extends Application {
             }
         });
 
-        vbox.getChildren().add(connectButton);
+        pane.getChildren().add(connectButton);
     }
 
+    /**
+     * Init back button.
+     * @param pane place, where button will be located.
+     * @param images images for files and folder.
+     */
+    private void initBackButton(@NotNull Pane pane, @NotNull Image[] images) {
+        backButton = new Button("Back");
+
+        backButton.setDisable(true);
+        backButton.setOnAction(actionEvent ->  {
+            try {
+                currentDirectory = currentDirectory.getParent();
+
+                if (currentDirectory.equals(rootPath)) {
+                    backButton.setDisable(true);
+                }
+
+                updateListView(images);
+            } catch (UnknownException e) {
+                e.printStackTrace();
+            }
+        });
+
+        pane.getChildren().add(backButton);
+    }
+
+    /**
+     * Launching UI.
+     */
     public static void main(@NotNull String[] args) throws IOException {
         Application.launch(args);
     }
