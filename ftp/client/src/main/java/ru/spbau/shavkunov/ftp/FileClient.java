@@ -14,6 +14,7 @@ import java.io.*;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.*;
+import java.nio.file.NotDirectoryException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
@@ -35,8 +36,15 @@ public class FileClient implements Client {
 
     public FileClient(int serverPort, @NotNull String hostname, @NotNull Path downloads) throws IOException {
         logger.debug("FileClient was created");
-        // TODO : check for valid download path
-        downloads.toFile().mkdir();
+
+        if (!downloads.toFile().isDirectory()) {
+            throw new NotDirectoryException(downloads.toString());
+        }
+
+        if (!downloads.toFile().exists()) {
+            downloads.toFile().mkdir();
+        }
+
         this.downloads = downloads;
         address = new InetSocketAddress(hostname, serverPort);
     }
@@ -201,5 +209,15 @@ public class FileClient implements Client {
         }
 
         throw new UnknownException();
+    }
+
+    @Override
+    public void setNewDownloadsFolder(@NotNull Path path) throws NotDirectoryException {
+        if (path.toFile().isDirectory()) {
+            downloads = path;
+            return;
+        }
+
+        throw new NotDirectoryException(path.toString());
     }
 }

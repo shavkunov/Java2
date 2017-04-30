@@ -169,12 +169,85 @@ public class ClientUI extends Application {
         });
     }
 
+    /**
+     * Initializing of all objects on the scene.
+     * @param scene scene, where objects will be located.
+     * @param images images images images for files and folder.
+     * @param stage window for directory chooser.
+     * @throws URISyntaxException throw exception, when URI parsed wrong.
+     */
     private void initSceneObjects(@NotNull Scene scene, @NotNull Image[] images, @NotNull Stage stage) throws URISyntaxException {
         VBox vbox = new VBox();
         initConnectButton(vbox, images);
+        initDirectoryChooserButton(stage, vbox);
+        initListView(images, vbox);
 
         ((Group) scene.getRoot()).getChildren().add(vbox);
+    }
 
+    /**
+     * Initializing of List View.
+     * @param images images images for files and folder.
+     * @param vbox place, where listView will be located.
+     */
+    private void initListView(@NotNull Image[] images, @NotNull VBox vbox) {
+        listView = new ListView();
+        listView.setOnMouseClicked(event -> {
+            // set on double click event
+            if (event.getClickCount() < 2) {
+                return;
+            }
+
+            String selectedItem = (String) listView.getSelectionModel().getSelectedItem();
+            logger.debug("User selected {} item", selectedItem);
+
+            if (filesInDirectory.get(selectedItem)) {
+                // going to folder
+                try {
+                    currentDirectory = currentDirectory.resolve(selectedItem);
+                    updateListView(images);
+                } catch (UnknownException e) {
+                    e.printStackTrace();
+                }
+            } else {
+                // trying to download file
+                Alert confirmDownloadDialog = new Alert(Alert.AlertType.CONFIRMATION);
+                confirmDownloadDialog.setTitle("Confirm download");
+                confirmDownloadDialog.setHeaderText(null);
+                confirmDownloadDialog.setContentText("Do you like to download the file " + selectedItem + "?");
+
+                Optional<ButtonType> result = confirmDownloadDialog.showAndWait();
+                if (result.get() != ButtonType.OK) {
+                    // user canceled download
+                    return;
+                }
+
+                try {
+                    client.executeGet(currentDirectory.resolve(selectedItem).toFile().toString());
+
+                    Alert successfulInformationDialog = new Alert(Alert.AlertType.INFORMATION);
+                    successfulInformationDialog.setTitle("Successful");
+                    successfulInformationDialog.setHeaderText(null);
+                    successfulInformationDialog.setContentText("The download of " + selectedItem + " was completed successfully");
+
+                    successfulInformationDialog.showAndWait();
+                } catch (UnknownException e) {
+                    e.printStackTrace();
+                }
+            }
+        });
+
+        listView.setItems(items);
+        HBox listViewHbox = new HBox(listView);
+        vbox.getChildren().add(listViewHbox);
+    }
+
+    /**
+     * Initializing directory chooser with label of current downloads folder.
+     * @param stage window for choosing folder.
+     * @param vbox place, where chooser will be located.
+     */
+    private void initDirectoryChooserButton(@NotNull Stage stage, @NotNull VBox vbox) {
         labelSelectedDirectory = new Label();
         labelSelectedDirectory.setText("Selected: " + downloads.toAbsolutePath().toString());
 
@@ -200,52 +273,6 @@ public class ClientUI extends Application {
         });
 
         vbox.getChildren().addAll(labelSelectedDirectory, openDirectoryChooser);
-
-        listView = new ListView();
-        listView.setOnMouseClicked(event -> {
-            if (event.getClickCount() < 2) {
-                return;
-            }
-
-            String item = (String) listView.getSelectionModel().getSelectedItem();
-            logger.debug("User selected {} item", item);
-
-            if (filesInDirectory.get(item)) {
-                try {
-                    currentDirectory = currentDirectory.resolve(item);
-                    updateListView(images);
-                } catch (UnknownException e) {
-                    e.printStackTrace();
-                }
-            } else {
-                Alert alertConfirm = new Alert(Alert.AlertType.CONFIRMATION);
-                alertConfirm.setTitle("Confirm download");
-                alertConfirm.setHeaderText(null);
-                alertConfirm.setContentText("Do you like to download the file " + item + "?");
-
-                Optional<ButtonType> result = alertConfirm.showAndWait();
-                if (!(result.get() == ButtonType.OK)) {
-                    return;
-                }
-
-                try {
-                    client.executeGet(currentDirectory.resolve(item).toFile().toString());
-
-                    Alert alert = new Alert(Alert.AlertType.INFORMATION);
-                    alert.setTitle("Successful");
-                    alert.setHeaderText(null);
-                    alert.setContentText("The download of " + item + " was completed successfully");
-
-                    alert.showAndWait();
-                } catch (UnknownException e) {
-                    e.printStackTrace();
-                }
-            }
-        });
-
-        listView.setItems(items);
-        HBox listViewHbox = new HBox(listView);
-        vbox.getChildren().add(listViewHbox);
     }
 
     /**
