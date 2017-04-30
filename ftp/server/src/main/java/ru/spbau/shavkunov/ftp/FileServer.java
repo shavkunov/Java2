@@ -9,8 +9,7 @@ import ru.spbau.shavkunov.ftp.handlers.GetQueryHandler;
 import ru.spbau.shavkunov.ftp.handlers.ListQueryHandler;
 import ru.spbau.shavkunov.ftp.message.Message;
 import ru.spbau.shavkunov.ftp.message.MessageReader;
-import ru.spbau.shavkunov.ftp.message.MessageWriter;
-import ru.spbau.shavkunov.ftp.message.Response;
+import ru.spbau.shavkunov.ftp.message.Writer;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -26,24 +25,15 @@ import java.nio.file.Paths;
 import java.util.Iterator;
 import java.util.Optional;
 
-// TODO : надо сделать отдельный поток.
 public class FileServer implements Server {
     private static final @NotNull Logger logger = LoggerFactory.getLogger(FileServer.class);
     private static final int SELECTING_TIMEOUT = 1000;
 
     private boolean isRunning = false;
-    private @NotNull Selector selector;
-    private @NotNull ServerSocketChannel serverChannel;
+    private @NotNull Thread serverThread;
 
     public FileServer(int port) throws IOException {
-        createServerFiles();
-        InetSocketAddress socketAddress = new InetSocketAddress(NetworkConstants.hostname, port);
-        selector = Selector.open();
-        serverChannel = ServerSocketChannel.open();
-        serverChannel.bind(socketAddress);
-        serverChannel.configureBlocking(false);
-        serverChannel.register(selector, SelectionKey.OP_ACCEPT);
-        logger.debug("Server created on address : " + socketAddress.getAddress());
+        serverThread = new Thread(new RunningService(port));
     }
 
     private void createServerFiles() {
@@ -64,104 +54,151 @@ public class FileServer implements Server {
     @Override
     public void start() {
         isRunning = true;
-        run();
+        serverThread.start();
     }
 
     @Override
     public void stop() {
         isRunning = false;
+
+        try {
+            serverThread.join();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
     }
 
-    private void run() {
-        try {
-            while (isRunning) {
-                logger.debug("Selecting keys");
-                selector.select(SELECTING_TIMEOUT);
-                logger.debug("Size: {}", selector.keys().size());
-                Iterator<SelectionKey> keyIterator = selector.selectedKeys().iterator();
-                while (keyIterator.hasNext()) {
-                    SelectionKey selectionKey = keyIterator.next();
+    private class RunningService implements Runnable {
+        private @NotNull Selector selector;
 
-                    keyIterator.remove();
-                    if (selectionKey.isAcceptable()) {
-                        logger.debug("Selected acceptable key : " + selectionKey.toString());
-                        handleAcceptable(selectionKey);
-                    }
+        public RunningService(int port) throws IOException {
+            createServerFiles();
+            InetSocketAddress socketAddress = new InetSocketAddress(NetworkConstants.hostname, port);
+            selector = Selector.open();
+            ServerSocketChannel serverChannel = ServerSocketChannel.open();
+            serverChannel.bind(socketAddress);
+            serverChannel.configureBlocking(false);
+            serverChannel.register(selector, SelectionKey.OP_ACCEPT);
+            logger.debug("Server created on address : " + socketAddress.getAddress());
+        }
 
-                    if (selectionKey.isReadable()) {
-                        logger.debug("Selected readable key : " + selectionKey.toString());
-                        handleReadable(selectionKey);
-                    }
+        @Override
+        public void run() {
+            try {
+                while (isRunning) {
+                    logger.debug("Selecting keys");
+                    selector.select(SELECTING_TIMEOUT);
+                    logger.debug("Size: {}", selector.keys().size());
+                    Iterator<SelectionKey> keyIterator = selector.selectedKeys().iterator();
+                    while (keyIterator.hasNext()) {
+                        SelectionKey selectionKey = keyIterator.next();
 
-                    if (selectionKey.isWritable()) {
-                        logger.debug("Selected writable key : " + selectionKey.toString());
-                        handleWritable(selectionKey);
+                        if (selectionKey.isAcceptable()) {
+                            logger.debug("Selected acceptable key : " + selectionKey.toString());
+                            handleAcceptable(selectionKey);
+                        }
+
+                        if (!selectionKey.isValid()) {
+                            logger.debug("Client {} was disconnected", selectionKey.channel());
+                            continue;
+                        }
+
+                        if (selectionKey.isReadable()) {
+                            logger.debug("Selected readable key : " + selectionKey.toString());
+                            handleReadable(selectionKey);
+                        } else {
+                            if (selectionKey.isWritable()) {
+                                logger.debug("Selected writable key : " + selectionKey.toString());
+                                handleWritable(selectionKey);
+                            }
+                        }
+
+                        keyIterator.remove();
                     }
                 }
+            } catch (IOException e) {
+                e.printStackTrace();
+            } catch (InvalidQueryException e) {
+                // сообщить пользователю об ошибке его запроса.
+            } catch (InvalidMessageException e) {
+                // сообщить пользователю об неккоректном запросе.
             }
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (InvalidQueryException e) {
-            // сообщить пользователю об ошибке его запроса.
-        } catch (InvalidMessageException e) {
-            // сообщить пользователю об неккоректном запросе.
         }
-    }
 
-    private void handleAcceptable(@NotNull SelectionKey selectionKey) throws IOException {
-        logger.debug("handling acceptable");
-        ServerSocketChannel serverChannel = (ServerSocketChannel) selectionKey.channel();
-        SocketChannel socketChannel = serverChannel.accept();
-        logger.debug("got client socket channel :" + socketChannel.toString());
+        private void handleAcceptable(@NotNull SelectionKey selectionKey) throws IOException {
+            logger.debug("handling acceptable");
+            ServerSocketChannel serverChannel = (ServerSocketChannel) selectionKey.channel();
+            SocketChannel socketChannel = serverChannel.accept();
+            logger.debug("got client socket channel :" + socketChannel.toString());
 
-        socketChannel.configureBlocking(false);
-        SelectionKey clientKey = socketChannel.register(selector, SelectionKey.OP_READ);
-        MessageReader reader = new MessageReader(clientKey);
-        clientKey.attach(reader);
-    }
-
-    private void handleReadable(@NotNull SelectionKey selectionKey) throws IOException, InvalidQueryException,
-                                                                                InvalidMessageException {
-        logger.debug("handling readable");
-        MessageReader reader = (MessageReader) selectionKey.attachment();
-        Optional<Message> message = reader.readMessage();
-
-        if (message.isPresent()) {
-            logger.debug("Message is read");
-            Response response = handleUserTask(message.get().getData());
-            MessageWriter writer = new MessageWriter(response, selectionKey);
-            selectionKey.channel().register(selectionKey.selector(), SelectionKey.OP_WRITE);
-            selectionKey.attach(writer);
+            socketChannel.configureBlocking(false);
+            SelectionKey clientKey = socketChannel.register(selector, SelectionKey.OP_READ);
+            MessageReader reader = new MessageReader((SocketChannel) clientKey.channel());
+            clientKey.attach(reader);
         }
-    }
 
-    private void handleWritable(@NotNull SelectionKey selectionKey) throws IOException {
-        logger.debug("handling writable");
-        MessageWriter writer = (MessageWriter) selectionKey.attachment();
-        writer.sendMessage();
-        if (writer.isCompleted()) {
-            logger.debug("Writer wrote message");
-            selectionKey.interestOps(0);
-        }
-    }
+        private void handleReadable(@NotNull SelectionKey selectionKey) throws IOException, InvalidQueryException,
+                InvalidMessageException {
+            logger.debug("handling readable");
+            MessageReader reader = (MessageReader) selectionKey.attachment();
 
-    private @NotNull Response handleUserTask(@NotNull byte[] content) throws InvalidQueryException {
-        try (ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(content);
-             ObjectInputStream input = new ObjectInputStream(byteArrayInputStream)) {
-
-            int typeOfQuery = input.readInt();
-            Path path = Paths.get((String) input.readObject());
-
-            if (typeOfQuery == NetworkConstants.LIST_QUERY) {
-                return new ListQueryHandler(path).handleListQuery();
+            if (reader.isDisconnected()) {
+                logger.debug("Client {} was disconnected", selectionKey.channel());
+                selectionKey.channel().close();
+                return;
             }
-            if (typeOfQuery == NetworkConstants.GET_QUERY) {
-                return new GetQueryHandler(path).handleGetQuery();
+
+            Optional<Message> message = reader.readMessage();
+
+            if (message.isPresent()) {
+                logger.debug("Message is read");
+                SocketChannel userChannel = (SocketChannel) selectionKey.channel();
+                Writer writer = handleUserTask(message.get(), userChannel);
+                selectionKey.channel().register(selectionKey.selector(), SelectionKey.OP_WRITE);
+                selectionKey.attach(writer);
             }
-        } catch (IOException | ClassNotFoundException e) {
-            e.printStackTrace();
         }
 
-        throw new InvalidQueryException();
+        private void handleWritable(@NotNull SelectionKey selectionKey) throws IOException {
+            logger.debug("handling writable");
+            Writer writer = (Writer) selectionKey.attachment();
+            try {
+                writer.sendMessage();
+                if (writer.isCompleted()) {
+                    logger.debug("Writer wrote message");
+
+                    selectionKey.channel().register(selector, SelectionKey.OP_READ);
+                    MessageReader reader = new MessageReader((SocketChannel) selectionKey.channel());
+                    selectionKey.attach(reader);
+                }
+            } catch (IOException e) {
+                writer.close();
+                logger.debug("Client {} was disconnected", selectionKey.channel());
+            }
+        }
+
+        private @NotNull Writer handleUserTask(@NotNull Message message, @NotNull SocketChannel userChannel)
+                throws InvalidQueryException {
+            logger.debug("handling user query");
+            try (ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(message.getData());
+                 ObjectInputStream input = new ObjectInputStream(byteArrayInputStream)) {
+
+                int typeOfQuery = input.readInt();
+                Path path = Paths.get((String) input.readObject());
+
+                if (typeOfQuery == NetworkConstants.LIST_QUERY) {
+                    logger.debug("User asked for list directory");
+                    return new ListQueryHandler(path).handleListQuery(userChannel);
+                }
+                if (typeOfQuery == NetworkConstants.GET_QUERY) {
+                    logger.debug("User asked for get file");
+                    return new GetQueryHandler(path).handleGetQuery(userChannel);
+                }
+            } catch (IOException | ClassNotFoundException e) {
+                e.printStackTrace();
+            }
+
+            throw new InvalidQueryException();
+        }
     }
 }

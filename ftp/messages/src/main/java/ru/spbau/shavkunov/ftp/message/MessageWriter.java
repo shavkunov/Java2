@@ -6,49 +6,41 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.SelectionKey;
-import java.nio.channels.SocketChannel;
+import java.nio.channels.WritableByteChannel;
 
-public class MessageWriter {
+public class MessageWriter implements Writer {
     private static final @NotNull Logger logger = LoggerFactory.getLogger(MessageWriter.class);
-    private @NotNull SocketChannel channel;
-    private @NotNull Response response;
-    private @NotNull ByteBuffer lengthBuffer = ByteBuffer.allocate(Integer.BYTES);
-    private boolean isSentResponseLength = false;
+    private @NotNull WritableByteChannel channel;
+    private @NotNull ByteBuffer buffer;
 
-    public MessageWriter(@NotNull Response response, @NotNull SelectionKey selectionKey) {
-        this.channel = (SocketChannel) selectionKey.channel();
-        this.response = response;
+    public MessageWriter(@NotNull Message message, @NotNull WritableByteChannel channel) {
+        this.channel = channel;
 
-        lengthBuffer.asLongBuffer().put(response.length());
-        logger.debug("Writer was created with selectionKey " + selectionKey);
+        buffer = ByteBuffer.allocate(Integer.BYTES + message.getMessageLength());
+        buffer.putInt(message.getMessageLength());
+        buffer.put(message.getData());
+        buffer.flip();
+
+        logger.debug("Writer was created with channel " + channel);
     }
 
+    @Override
     public void sendMessage() throws IOException {
         logger.debug("Sending message");
-        if (!isSentResponseLength) {
-            sendLength();
+        channel.write(buffer);
 
-            if (!isSentResponseLength) {
-                return;
-            }
-        }
-
-        response.sendData(channel);
-    }
-
-    private void sendLength() throws IOException {
-        logger.debug("Sending length");
-        SocketChannel socketChannel = channel;
-        socketChannel.write(lengthBuffer);
-
-        if (!lengthBuffer.hasRemaining()) {
-            isSentResponseLength = true;
-            logger.debug("Sent length");
+        if (isCompleted()) {
+            logger.debug("Data has sent");
         }
     }
 
+    @Override
     public boolean isCompleted() {
-        return isSentResponseLength && response.isSent();
+        return !buffer.hasRemaining();
+    }
+
+    @Override
+    public void close() throws IOException {
+        channel.close();
     }
 }

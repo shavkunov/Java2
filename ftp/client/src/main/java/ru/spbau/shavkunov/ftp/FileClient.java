@@ -6,17 +6,22 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ru.spbau.shavkunov.ftp.exceptions.InvalidMessageException;
 import ru.spbau.shavkunov.ftp.exceptions.UnknownException;
-import ru.spbau.shavkunov.ftp.message.*;
+import ru.spbau.shavkunov.ftp.message.Message;
+import ru.spbau.shavkunov.ftp.message.MessageReader;
+import ru.spbau.shavkunov.ftp.message.MessageWriter;
 
 import java.io.*;
 import java.net.InetSocketAddress;
+import java.nio.ByteBuffer;
 import java.nio.channels.*;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
+import static ru.spbau.shavkunov.ftp.NetworkConstants.GET_QUERY;
 import static ru.spbau.shavkunov.ftp.NetworkConstants.LIST_QUERY;
 
 public class FileClient implements Client {
@@ -41,7 +46,7 @@ public class FileClient implements Client {
         selector = Selector.open();
         channel = SocketChannel.open(address);
         channel.configureBlocking(false);
-        channel.register(selector, SelectionKey.OP_CONNECT);
+        channel.register(selector, SelectionKey.OP_WRITE);
         logger.debug("connected to " + address);
     }
 
@@ -58,18 +63,10 @@ public class FileClient implements Client {
                     SelectionKey selectionKey = iterator.next();
                     logger.debug("SelectionKey :" + selectionKey);
 
-                    if (selectionKey.isConnectable()) {
-                        logger.debug("handle connectable : " + selectionKey);
-                        if (channel.finishConnect()) {
-                            channel.register(selector, SelectionKey.OP_WRITE);
-                        }
-                    }
-
                     if (selectionKey.isWritable()) {
                         logger.debug("handling writable");
                         byte[] content = getQueryBytes(path, LIST_QUERY);
-                        Response response = new SmallResponse(content);
-                        MessageWriter writer = new MessageWriter(response, selectionKey);
+                        MessageWriter writer = new MessageWriter(new Message(content), channel);
 
                         while (!writer.isCompleted()) {
                             logger.debug("Sending message to server");
@@ -81,9 +78,10 @@ public class FileClient implements Client {
 
                     if (selectionKey.isReadable()) {
                         logger.debug("handling readable");
-                        MessageReader reader = new MessageReader(selectionKey);
+                        MessageReader reader = new MessageReader(channel);
                         Message message = reader.readNow();
                         logger.debug("Read response from server");
+                        selectionKey.interestOps(SelectionKey.OP_WRITE);
                         return parseListMessage(message);
                     }
 
@@ -114,6 +112,7 @@ public class FileClient implements Client {
             output.writeInt(typeOfQuery);
             output.writeObject(path);
 
+            output.flush();
             content = byteArrayOutputStream.toByteArray();
 
             return content;
@@ -146,24 +145,19 @@ public class FileClient implements Client {
     }
 
     @Override
-    public @NotNull File executeGet(@NotNull String path) throws UnknownException {
+    public @NotNull File executeGet(@NotNull String pathToFile) throws UnknownException {
         try {
+            Path path = Paths.get(pathToFile);
+
             while (true) {
                 selector.select();
                 Iterator<SelectionKey> iterator = selector.selectedKeys().iterator();
                 while (iterator.hasNext()) {
                     SelectionKey selectionKey = iterator.next();
 
-                    if (selectionKey.isConnectable()) {
-                        if (channel.finishConnect()) {
-                            channel.register(selector, SelectionKey.OP_WRITE);
-                        }
-                    }
-
                     if (selectionKey.isWritable()) {
-                        byte[] content = path.getBytes();
-                        Response response = new SmallResponse(content);
-                        MessageWriter writer = new MessageWriter(response, selectionKey);
+                        byte[] content = getQueryBytes(pathToFile, GET_QUERY);
+                        MessageWriter writer = new MessageWriter(new Message(content), channel);
 
                         while (!writer.isCompleted()) {
                             writer.sendMessage();
@@ -173,8 +167,29 @@ public class FileClient implements Client {
                     }
 
                     if (selectionKey.isReadable()) {
-                        FileDownloader downloader = new FileDownloader(selectionKey, path, downloads);
-                        return downloader.downloadFile();
+                        Path pathToLocalCopy = downloads.resolve(path.toFile().getName());
+                        pathToLocalCopy.toFile().createNewFile();
+
+                        FileChannel fileChannel = FileChannel.open(pathToLocalCopy, StandardOpenOption.WRITE,
+                                                                                    StandardOpenOption.TRUNCATE_EXISTING);
+
+
+                        ByteBuffer length = ByteBuffer.allocate(Message.longLengthBytes);
+
+                        while (length.hasRemaining()) {
+                            channel.read(length);
+                        }
+
+                        length.flip();
+                        long fileSize = length.getLong();
+
+                        long receivedBytes = fileChannel.transferFrom(channel, 0, fileSize);
+                        while (receivedBytes != fileSize) {
+                            receivedBytes = fileChannel.transferFrom(channel, receivedBytes, fileSize);
+                        }
+
+                        selectionKey.interestOps(SelectionKey.OP_WRITE);
+                        return pathToLocalCopy.toFile();
                     }
                     iterator.remove();
                 }

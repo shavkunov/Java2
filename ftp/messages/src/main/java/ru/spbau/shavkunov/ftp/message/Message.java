@@ -3,18 +3,17 @@ package ru.spbau.shavkunov.ftp.message;
 import org.jetbrains.annotations.NotNull;
 
 public class Message {
-    public static int lengthBytes = Integer.BYTES;
+    public static int intLengthBytes = Integer.BYTES;
+    public static int longLengthBytes = Long.BYTES;
 
-    private int messageLength;
     private @NotNull byte[] data;
 
-    public Message(int messageLength, @NotNull byte[] data) {
-        this.messageLength = messageLength;
+    public Message(@NotNull byte[] data) {
         this.data = data;
     }
 
     public int getMessageLength() {
-        return messageLength;
+        return data.length;
     }
 
     public @NotNull byte[] getData() {
