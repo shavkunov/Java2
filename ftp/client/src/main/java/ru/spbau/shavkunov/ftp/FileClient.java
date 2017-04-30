@@ -27,15 +27,17 @@ import static ru.spbau.shavkunov.ftp.NetworkConstants.LIST_QUERY;
 public class FileClient implements Client {
     private static final @NotNull Logger logger = LoggerFactory.getLogger(FileClient.class);
     private static final int SELECTING_TIMEOUT = 1000;
-    private static final Path downloads = Paths.get("downloads");
 
+    private @NotNull Path downloads;
     private @NotNull InetSocketAddress address;
     private @Nullable SocketChannel channel;
     private @Nullable Selector selector;
 
-    public FileClient(int serverPort, @NotNull String hostname) throws IOException {
+    public FileClient(int serverPort, @NotNull String hostname, @NotNull Path downloads) throws IOException {
         logger.debug("FileClient was created");
+        // TODO : check for valid download path
         downloads.toFile().mkdir();
+        this.downloads = downloads;
         address = new InetSocketAddress(hostname, serverPort);
     }
 
@@ -87,16 +89,12 @@ public class FileClient implements Client {
 
                     iterator.remove();
                 }
-
-                Thread.sleep(1000);
             }
         } catch (ClosedChannelException e) {
             e.printStackTrace();
         } catch (IOException e) {
             e.printStackTrace();
         } catch (InvalidMessageException e) {
-            e.printStackTrace();
-        } catch (InterruptedException e) {
             e.printStackTrace();
         }
 
@@ -146,6 +144,7 @@ public class FileClient implements Client {
 
     @Override
     public @NotNull File executeGet(@NotNull String pathToFile) throws UnknownException {
+        logger.debug("Executing get with {}", pathToFile);
         try {
             Path path = Paths.get(pathToFile);
 

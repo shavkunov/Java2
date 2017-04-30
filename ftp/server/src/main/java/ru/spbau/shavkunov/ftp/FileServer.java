@@ -29,7 +29,7 @@ public class FileServer implements Server {
     private static final @NotNull Logger logger = LoggerFactory.getLogger(FileServer.class);
     private static final int SELECTING_TIMEOUT = 1000;
 
-    private boolean isRunning = false;
+    private volatile boolean isRunning = false;
     private @NotNull Thread serverThread;
 
     public FileServer(int port) throws IOException {
@@ -37,15 +37,17 @@ public class FileServer implements Server {
     }
 
     private void createServerFiles() {
-        Path rootPath = Paths.get(".").normalize();
+        Path rootPath = Paths.get("test").normalize();
+        rootPath.toFile().mkdir();
 
         try {
             Files.write(rootPath.resolve("test1"), "text1".getBytes());
             Files.write(rootPath.resolve("test2"), "text2".getBytes());
-            rootPath.resolve("test").toFile().mkdir();
-            Files.write(rootPath.resolve("test").resolve("test3"), "test3".getBytes());
-            Files.write(rootPath.resolve("test").resolve("test4"), "test4".getBytes());
-            Files.write(rootPath.resolve("test").resolve("test5"), "test5".getBytes());
+
+            rootPath.resolve("dir").toFile().mkdir();
+            Files.write(rootPath.resolve("dir").resolve("test3"), "test3".getBytes());
+            Files.write(rootPath.resolve("dir").resolve("test4"), "test4".getBytes());
+            Files.write(rootPath.resolve("dir").resolve("test5"), "test5".getBytes());
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -60,7 +62,7 @@ public class FileServer implements Server {
     @Override
     public void stop() {
         isRunning = false;
-
+        serverThread.interrupt();
         try {
             serverThread.join();
         } catch (InterruptedException e) {

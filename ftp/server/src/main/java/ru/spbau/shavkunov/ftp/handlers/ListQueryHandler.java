@@ -27,7 +27,7 @@ public class ListQueryHandler {
         try (ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
              ObjectOutputStream output = new ObjectOutputStream(byteArrayOutputStream)) {
 
-            if (path.toFile().exists()) {
+            if (path.toFile().exists() && path.toFile().isDirectory()) {
                 int size = path.toFile().listFiles().length;
                 logger.debug("Files in directory : {}", size);
                 output.writeInt(size);
