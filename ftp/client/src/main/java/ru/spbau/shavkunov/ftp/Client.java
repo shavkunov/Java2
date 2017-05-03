@@ -1,6 +1,7 @@
 package ru.spbau.shavkunov.ftp;
 
 import org.jetbrains.annotations.NotNull;
+import ru.spbau.shavkunov.ftp.exceptions.ConnectionException;
 import ru.spbau.shavkunov.ftp.exceptions.FileNotExistsException;
 import ru.spbau.shavkunov.ftp.exceptions.NotConnectedException;
 
@@ -19,7 +20,7 @@ public interface Client {
      * Connect to server.
      * @throws IOException if an I/O error occurs.
      */
-    void connect() throws IOException;
+    void connect() throws IOException, ConnectionException;
 
     /**
      * Disconnect from server.
@@ -34,7 +35,7 @@ public interface Client {
      * @param path specified path in server where list query will be executed.
      * @return map of files in directory or Optional.empty if client is disconnected.
      */
-    @NotNull Optional<Map<String, Boolean>> executeList(@NotNull String path);
+    @NotNull Optional<Map<String, Boolean>> executeList(@NotNull String path) throws FileNotExistsException;
 
     /**
      * Executing get query. It will download specified file into downloads path.

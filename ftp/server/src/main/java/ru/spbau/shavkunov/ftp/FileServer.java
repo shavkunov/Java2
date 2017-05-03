@@ -152,9 +152,9 @@ public class FileServer implements Server {
             } catch (IOException e) {
                 e.printStackTrace();
             } catch (InvalidQueryException e) {
-                // сообщить пользователю об ошибке его запроса. Make disconnect.
+                logger.debug("Invalid query {}", e.toString());
             } catch (InvalidMessageException e) {
-                // сообщить пользователю об неккоректном запросе.
+                logger.debug("Invalid message from client {}", e.toString());
             }
         }
 

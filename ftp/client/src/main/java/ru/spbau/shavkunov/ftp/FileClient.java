@@ -4,6 +4,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import ru.spbau.shavkunov.ftp.exceptions.ConnectionException;
 import ru.spbau.shavkunov.ftp.exceptions.FileNotExistsException;
 import ru.spbau.shavkunov.ftp.exceptions.InvalidMessageException;
 import ru.spbau.shavkunov.ftp.exceptions.NotConnectedException;
@@ -24,15 +25,12 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Optional;
 
-import static ru.spbau.shavkunov.ftp.NetworkConstants.GET_QUERY;
-import static ru.spbau.shavkunov.ftp.NetworkConstants.LIST_QUERY;
-import static ru.spbau.shavkunov.ftp.NetworkConstants.standardDownloadsFolder;
+import static ru.spbau.shavkunov.ftp.NetworkConstants.*;
 
 /**
  * Implementation of blocking client.
- * TODO : get query returns zero message, what will happen?
  */
-public class FileClient implements Client {
+public class FileClient implements Client, AutoCloseable {
     private static final @NotNull Logger logger = LoggerFactory.getLogger(FileClient.class);
 
     /**
@@ -93,11 +91,16 @@ public class FileClient implements Client {
     }
 
     @Override
-    public void connect() throws IOException {
+    public void connect() throws IOException, ConnectionException {
         logger.debug("connecting");
 
         selector = Selector.open();
         channel = SocketChannel.open(address);
+
+        if (!channel.isConnected()) {
+            throw new ConnectionException();
+        }
+
         channel.configureBlocking(false);
         channel.register(selector, SelectionKey.OP_WRITE);
         logger.debug("connected to " + address);
@@ -113,7 +116,7 @@ public class FileClient implements Client {
     }
 
     @Override
-    public @NotNull Optional<Map<String, Boolean>> executeList(@NotNull String path) {
+    public @NotNull Optional<Map<String, Boolean>> executeList(@NotNull String path) throws FileNotExistsException {
         logger.debug("Executing list with path : {}", path);
         try {
             while (channel != null && channel.isConnected()) {
@@ -144,6 +147,11 @@ public class FileClient implements Client {
                         Message message = reader.readNow();
                         logger.debug("Read response from server");
                         selectionKey.interestOps(SelectionKey.OP_WRITE);
+
+                        if (message.equals(EMPTY_MESSAGE)) {
+                            throw new FileNotExistsException();
+                        }
+
                         return Optional.of(parseListMessage(message));
                     }
 
@@ -189,7 +197,7 @@ public class FileClient implements Client {
     }
 
     /**
-     * Deserializing server list response.
+     * Deserializer of server list response.
      * @param message response of the server.
      * @return list of filenames of the asked server directory.
      * Each entry consist of filename and boolean value. It's true if filename is directory and false otherwise.
@@ -283,5 +291,11 @@ public class FileClient implements Client {
         }
 
         throw new NotDirectoryException(path.toString());
+    }
+
+    @Override
+    public void close() throws Exception {
+        channel.close();
+        selector.close();
     }
 }

@@ -18,6 +18,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import ru.spbau.shavkunov.ftp.exceptions.ConnectionException;
 import ru.spbau.shavkunov.ftp.exceptions.FileNotExistsException;
 import ru.spbau.shavkunov.ftp.exceptions.NotConnectedException;
 
@@ -126,7 +127,13 @@ public class ClientUI extends Application {
      * @param images images for files and folder.
      */
     private void updateListView(@NotNull Image[] images) {
-        Optional<Map<String, Boolean>> result = client.executeList(currentDirectory.toFile().toString());
+        Optional<Map<String, Boolean>> result = null;
+        try {
+            result = client.executeList(currentDirectory.toFile().toString());
+        } catch (FileNotExistsException e) {
+            // should not happen from GUI.
+            e.printStackTrace();
+        }
 
         if (!result.isPresent()) {
             // network closed
@@ -234,9 +241,13 @@ public class ClientUI extends Application {
                     return;
                 }
 
-                // TODO : handle disconnect
                 try {
-                    client.executeGet(currentDirectory.resolve(selectedItem).toFile().toString());
+                    Optional<File> response = client.executeGet(currentDirectory.resolve(selectedItem)
+                                                                                .toFile().toString());
+
+                    if (!response.isPresent()) {
+                        showConnectionErrorDialog();
+                    }
 
                     Alert successfulInformationDialog = new Alert(Alert.AlertType.INFORMATION);
                     successfulInformationDialog.setTitle("Successful");
@@ -253,6 +264,16 @@ public class ClientUI extends Application {
         listView.setItems(items);
         HBox listViewHbox = new HBox(listView);
         vbox.getChildren().add(listViewHbox);
+    }
+
+    /**
+     * Shows a connection error dialog to user in case of connection problems.
+     */
+    private void showConnectionErrorDialog() {
+        Alert connectionErrorAlert = new Alert(Alert.AlertType.INFORMATION);
+        connectionErrorAlert.setTitle("Error");
+        connectionErrorAlert.setHeaderText(null);
+        connectionErrorAlert.setContentText("Connection error");
     }
 
     /**
@@ -302,6 +323,9 @@ public class ClientUI extends Application {
                 client.connect();
                 updateListView(images);
             } catch (IOException e) {
+                e.printStackTrace();
+            } catch (ConnectionException e) {
+                showConnectionErrorDialog();
                 e.printStackTrace();
             }
         });
