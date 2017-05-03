@@ -13,16 +13,39 @@ import java.io.ObjectOutputStream;
 import java.nio.channels.WritableByteChannel;
 import java.nio.file.Path;
 
+import static ru.spbau.shavkunov.ftp.NetworkConstants.EMPTY_MESSAGE;
+
+/**
+ * Class handles list task.
+ */
 public class ListQueryHandler {
     private static final @NotNull Logger logger = LoggerFactory.getLogger(ListQueryHandler.class);
+
+    /**
+     * path to directory
+     */
     private @NotNull Path path;
 
+    /**
+     * Creating handler.
+     * @param path path to directory, where list task will be executed.
+     */
     public ListQueryHandler(@NotNull Path path) {
         logger.debug("List handler created with path : {}", path);
         this.path = path;
     }
 
+    /**
+     * Creating writer.
+     * @param channel client channel.
+     * @return writer, which ready to send message of serialized list data.
+     * It will send zero message if path is directory or file doesn't exist.
+     */
     public @NotNull MessageWriter handleListQuery(@NotNull WritableByteChannel channel) {
+        if (!path.toFile().exists() || !path.toFile().isDirectory()) {
+            return new MessageWriter(EMPTY_MESSAGE, channel);
+        }
+
         byte[] content = null;
         try (ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
              ObjectOutputStream output = new ObjectOutputStream(byteArrayOutputStream)) {

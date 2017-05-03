@@ -4,6 +4,7 @@ import java.io.IOException;
 
 import static ru.spbau.shavkunov.ftp.NetworkConstants.PORT;
 
+// TODO : delete this class?
 public class Main {
     public static void main(String[] args) {
         try {

@@ -4,8 +4,9 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import ru.spbau.shavkunov.ftp.exceptions.FileNotExistsException;
 import ru.spbau.shavkunov.ftp.exceptions.InvalidMessageException;
-import ru.spbau.shavkunov.ftp.exceptions.UnknownException;
+import ru.spbau.shavkunov.ftp.exceptions.NotConnectedException;
 import ru.spbau.shavkunov.ftp.message.Message;
 import ru.spbau.shavkunov.ftp.message.MessageReader;
 import ru.spbau.shavkunov.ftp.message.MessageWriter;
@@ -21,19 +22,51 @@ import java.nio.file.StandardOpenOption;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Optional;
 
 import static ru.spbau.shavkunov.ftp.NetworkConstants.GET_QUERY;
 import static ru.spbau.shavkunov.ftp.NetworkConstants.LIST_QUERY;
+import static ru.spbau.shavkunov.ftp.NetworkConstants.standardDownloadsFolder;
 
+/**
+ * Implementation of blocking client.
+ * TODO : get query returns zero message, what will happen?
+ */
 public class FileClient implements Client {
     private static final @NotNull Logger logger = LoggerFactory.getLogger(FileClient.class);
+
+    /**
+     * Timeout for selecting appropriate channel.
+     */
     private static final int SELECTING_TIMEOUT = 1000;
 
+    /**
+     * Downloads path
+     */
     private @NotNull Path downloads;
+
+    /**
+     * Server address.
+     */
     private @NotNull InetSocketAddress address;
+
+    /**
+     * Channel for communication with server.
+     */
     private @Nullable SocketChannel channel;
+
+    /**
+     * Channel selector.
+     */
     private @Nullable Selector selector;
 
+    /**
+     * Creating a file client.
+     * @param serverPort specified port, which server is listen to.
+     * @param hostname hostname of the server.
+     * @param downloads folder, where download files will be located.
+     * @throws IOException if an I/O error occurs.
+     */
     public FileClient(int serverPort, @NotNull String hostname, @NotNull Path downloads) throws IOException {
         logger.debug("FileClient was created");
 
@@ -49,6 +82,16 @@ public class FileClient implements Client {
         address = new InetSocketAddress(hostname, serverPort);
     }
 
+    /**
+     * Same as previous constructor, but downloads folder is user system download folder.
+     * @param serverPort specified port, which server is listen to.
+     * @param hostname hostname of the server.
+     * @throws IOException if an I/O error occurs.
+     */
+    public FileClient(int serverPort, @NotNull String hostname) throws IOException {
+        this(serverPort, hostname, standardDownloadsFolder);
+    }
+
     @Override
     public void connect() throws IOException {
         logger.debug("connecting");
@@ -61,10 +104,19 @@ public class FileClient implements Client {
     }
 
     @Override
-    public @NotNull Map<String, Boolean> executeList(@NotNull String path) throws UnknownException {
+    public void disconnect() throws NotConnectedException, IOException {
+        if (channel == null || !channel.isConnected()) {
+            throw new NotConnectedException();
+        }
+
+        channel.close();
+    }
+
+    @Override
+    public @NotNull Optional<Map<String, Boolean>> executeList(@NotNull String path) {
         logger.debug("Executing list with path : {}", path);
         try {
-            while (true) {
+            while (channel != null && channel.isConnected()) {
                 logger.debug("Selecting keys");
                 selector.select(SELECTING_TIMEOUT);
                 Iterator<SelectionKey> iterator = selector.selectedKeys().iterator();
@@ -92,7 +144,7 @@ public class FileClient implements Client {
                         Message message = reader.readNow();
                         logger.debug("Read response from server");
                         selectionKey.interestOps(SelectionKey.OP_WRITE);
-                        return parseListMessage(message);
+                        return Optional.of(parseListMessage(message));
                     }
 
                     iterator.remove();
@@ -106,9 +158,15 @@ public class FileClient implements Client {
             e.printStackTrace();
         }
 
-        throw new UnknownException();
+        return Optional.empty();
     }
 
+    /**
+     * Serializing query.
+     * @param path path of query.
+     * @param typeOfQuery GET_QUERY or LIST_QUERY constants.
+     * @return serialized query message into byte array.
+     */
     private @NotNull byte[] getQueryBytes(@NotNull String path, int typeOfQuery) {
         byte[] content = null;
 
@@ -130,6 +188,12 @@ public class FileClient implements Client {
         return content;
     }
 
+    /**
+     * Deserializing server list response.
+     * @param message response of the server.
+     * @return list of filenames of the asked server directory.
+     * Each entry consist of filename and boolean value. It's true if filename is directory and false otherwise.
+     */
     private @NotNull Map<String, Boolean> parseListMessage(@NotNull Message message) {
         Map<String, Boolean> parsedMessage = new HashMap<>();
         try (ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(message.getData());
@@ -151,12 +215,12 @@ public class FileClient implements Client {
     }
 
     @Override
-    public @NotNull File executeGet(@NotNull String pathToFile) throws UnknownException {
+    public @NotNull Optional<File> executeGet(@NotNull String pathToFile) throws FileNotExistsException {
         logger.debug("Executing get with {}", pathToFile);
         try {
             Path path = Paths.get(pathToFile);
 
-            while (true) {
+            while (channel != null && channel.isConnected()) {
                 selector.select();
                 Iterator<SelectionKey> iterator = selector.selectedKeys().iterator();
                 while (iterator.hasNext()) {
@@ -196,7 +260,7 @@ public class FileClient implements Client {
                         }
 
                         selectionKey.interestOps(SelectionKey.OP_WRITE);
-                        return pathToLocalCopy.toFile();
+                        return Optional.of(pathToLocalCopy.toFile());
                     }
                     iterator.remove();
                 }
@@ -208,7 +272,7 @@ public class FileClient implements Client {
             e.printStackTrace();
         }
 
-        throw new UnknownException();
+        return Optional.empty();
     }
 
     @Override

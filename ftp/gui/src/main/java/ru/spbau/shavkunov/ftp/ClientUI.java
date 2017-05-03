@@ -18,7 +18,8 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import ru.spbau.shavkunov.ftp.exceptions.UnknownException;
+import ru.spbau.shavkunov.ftp.exceptions.FileNotExistsException;
+import ru.spbau.shavkunov.ftp.exceptions.NotConnectedException;
 
 import java.io.File;
 import java.io.IOException;
@@ -30,6 +31,7 @@ import java.util.Map;
 import java.util.Optional;
 
 import static ru.spbau.shavkunov.ftp.NetworkConstants.PORT;
+import static ru.spbau.shavkunov.ftp.NetworkConstants.standardDownloadsFolder;
 
 /**
  * Graphical User Interface for client.
@@ -56,17 +58,12 @@ public class ClientUI extends Application {
      * Response of the server. There are list of files located in currentDirectory.
      * Map of filename is true, if filename is directory on server side, false in other case.
      */
-    private @Nullable Map<String, Boolean> filesInDirectory;
+    private @NotNull Map<String, Boolean> filesInDirectory;
 
     /**
      * Current list view for visualize filesInDirectory.
      */
     private @Nullable ListView listView;
-
-    /**
-     * Downloads folder in user System.
-     */
-    private static final @NotNull Path standardDownloadsFolder = Paths.get(System.getProperty("user.home")).resolve("Downloads");
 
     /**
      * Directory, where downloaded files are stored.
@@ -127,11 +124,14 @@ public class ClientUI extends Application {
     /**
      * Updating listView for appropriate content.
      * @param images images for files and folder.
-     * @throws UnknownException internal error of client.
      */
-    private void updateListView(@NotNull Image[] images) throws UnknownException {
-        filesInDirectory = client.executeList(currentDirectory.toFile().toString());
+    private void updateListView(@NotNull Image[] images) {
+        Optional<Map<String, Boolean>> result = client.executeList(currentDirectory.toFile().toString());
 
+        if (!result.isPresent()) {
+            // network closed
+            items.clear();
+        }
 
         if (filesInDirectory.size() > 0) {
             // cleaning previous content to add a new one
@@ -192,6 +192,7 @@ public class ClientUI extends Application {
         vbox.getChildren().add(hBox);
 
         initConnectButton(hBox, images);
+        initDisconnectButton(hBox);
         initBackButton(hBox, images);
         initDirectoryChooserButton(stage, vbox);
         initListView(images, vbox);
@@ -217,13 +218,9 @@ public class ClientUI extends Application {
 
             if (filesInDirectory.get(selectedItem)) {
                 // going to folder
-                try {
-                    currentDirectory = currentDirectory.resolve(selectedItem);
-                    backButton.setDisable(false);
-                    updateListView(images);
-                } catch (UnknownException e) {
-                    e.printStackTrace();
-                }
+                currentDirectory = currentDirectory.resolve(selectedItem);
+                backButton.setDisable(false);
+                updateListView(images);
             } else {
                 // trying to download file
                 Alert confirmDownloadDialog = new Alert(Alert.AlertType.CONFIRMATION);
@@ -237,6 +234,7 @@ public class ClientUI extends Application {
                     return;
                 }
 
+                // TODO : handle disconnect
                 try {
                     client.executeGet(currentDirectory.resolve(selectedItem).toFile().toString());
 
@@ -246,7 +244,7 @@ public class ClientUI extends Application {
                     successfulInformationDialog.setContentText("The download of " + selectedItem + " was completed successfully");
 
                     successfulInformationDialog.showAndWait();
-                } catch (UnknownException e) {
+                } catch (FileNotExistsException e) {
                     e.printStackTrace();
                 }
             }
@@ -291,7 +289,7 @@ public class ClientUI extends Application {
     }
 
     /**
-     * Init connection button.
+     * Init connect button.
      * @param pane place, where button will be located.
      * @param images images for files and folder.
      */
@@ -303,14 +301,32 @@ public class ClientUI extends Application {
                 client = new FileClient(PORT, NetworkConstants.hostname, downloads);
                 client.connect();
                 updateListView(images);
-            } catch (UnknownException e) {
-                e.printStackTrace();
             } catch (IOException e) {
                 e.printStackTrace();
             }
         });
 
         pane.getChildren().add(connectButton);
+    }
+
+    /**
+     * Init disconnect button.
+     * @param pane place, where button will be located.
+     */
+    private void initDisconnectButton(@NotNull Pane pane) {
+        Button disconnectButton = new Button("Disconnect from server");
+
+        disconnectButton.setOnAction(actionEvent ->  {
+            try {
+                client.disconnect();
+            } catch (IOException e) {
+                e.printStackTrace();
+            } catch (NotConnectedException e) {
+                e.printStackTrace();
+            }
+        });
+
+        pane.getChildren().add(disconnectButton);
     }
 
     /**
@@ -323,17 +339,13 @@ public class ClientUI extends Application {
 
         backButton.setDisable(true);
         backButton.setOnAction(actionEvent ->  {
-            try {
-                currentDirectory = currentDirectory.getParent();
+            currentDirectory = currentDirectory.getParent();
 
-                if (currentDirectory.equals(rootPath)) {
-                    backButton.setDisable(true);
-                }
-
-                updateListView(images);
-            } catch (UnknownException e) {
-                e.printStackTrace();
+            if (currentDirectory.equals(rootPath)) {
+                backButton.setDisable(true);
             }
+
+            updateListView(images);
         });
 
         pane.getChildren().add(backButton);

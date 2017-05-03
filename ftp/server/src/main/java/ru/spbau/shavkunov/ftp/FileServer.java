@@ -25,17 +25,37 @@ import java.nio.file.Paths;
 import java.util.Iterator;
 import java.util.Optional;
 
+/**
+ * Simple FTP implementation of non-blocking server.
+ */
 public class FileServer implements Server {
     private static final @NotNull Logger logger = LoggerFactory.getLogger(FileServer.class);
+
+    /**
+     * Connection select timeout.
+     */
     private static final int SELECTING_TIMEOUT = 1000;
 
+    /**
+     * True if server is running and false otherwise.
+     */
     private volatile boolean isRunning = false;
+
+    /**
+     * Server executing thread.
+     */
     private @NotNull Thread serverThread;
 
+    /**
+     * Creating FTP Server on port.
+     * @param port port, which server will be listen to.
+     * @throws IOException if an I/O error occurs.
+     */
     public FileServer(int port) throws IOException {
         serverThread = new Thread(new RunningService(port));
     }
 
+    // TODO : move to test side.
     private void createServerFiles() {
         Path rootPath = Paths.get("test").normalize();
         rootPath.toFile().mkdir();
@@ -70,9 +90,20 @@ public class FileServer implements Server {
         }
     }
 
+    /**
+     * Class which handles with connections to server.
+     */
     private class RunningService implements Runnable {
+        /**
+         * Channel selector.
+         */
         private @NotNull Selector selector;
 
+        /**
+         * Creating service.
+         * @param port port, which server is listen to.
+         * @throws IOException if an I/O error occurs.
+         */
         public RunningService(int port) throws IOException {
             createServerFiles();
             InetSocketAddress socketAddress = new InetSocketAddress(NetworkConstants.hostname, port);
@@ -121,12 +152,17 @@ public class FileServer implements Server {
             } catch (IOException e) {
                 e.printStackTrace();
             } catch (InvalidQueryException e) {
-                // сообщить пользователю об ошибке его запроса.
+                // сообщить пользователю об ошибке его запроса. Make disconnect.
             } catch (InvalidMessageException e) {
                 // сообщить пользователю об неккоректном запросе.
             }
         }
 
+        /**
+         * Handle acceptable selection key. Accepts the connection and creates reader for reading client task.
+         * @param selectionKey selection key which is acceptable.
+         * @throws IOException if an I/O error occurs.
+         */
         private void handleAcceptable(@NotNull SelectionKey selectionKey) throws IOException {
             logger.debug("handling acceptable");
             ServerSocketChannel serverChannel = (ServerSocketChannel) selectionKey.channel();
@@ -139,6 +175,14 @@ public class FileServer implements Server {
             clientKey.attach(reader);
         }
 
+        /**
+         * Handle readable selection key. Tries to read client message.
+         * If successful then creates writer for response to client.
+         * @param selectionKey selection key that is readable.
+         * @throws IOException if an I/O error occurs.
+         * @throws InvalidQueryException if query is invalid.
+         * @throws InvalidMessageException if message is invalid.
+         */
         private void handleReadable(@NotNull SelectionKey selectionKey) throws IOException, InvalidQueryException,
                 InvalidMessageException {
             logger.debug("handling readable");
@@ -161,6 +205,12 @@ public class FileServer implements Server {
             }
         }
 
+        /**
+         * Handle writable selection key. Tries to write message to user.
+         * If successful, then creates reader for reading next tasks of same client.
+         * @param selectionKey selection key which is writable.
+         * @throws IOException if an I/O error occurs.
+         */
         private void handleWritable(@NotNull SelectionKey selectionKey) throws IOException {
             logger.debug("handling writable");
             Writer writer = (Writer) selectionKey.attachment();
@@ -179,7 +229,14 @@ public class FileServer implements Server {
             }
         }
 
-        private @NotNull Writer handleUserTask(@NotNull Message message, @NotNull SocketChannel userChannel)
+        /**
+         * Handle received user task.
+         * @param message message, which client sent.
+         * @param clientChannel client channel
+         * @return writer which will write appropriate response for client.
+         * @throws InvalidQueryException if query is invalid.
+         */
+        private @NotNull Writer handleUserTask(@NotNull Message message, @NotNull SocketChannel clientChannel)
                 throws InvalidQueryException {
             logger.debug("handling user query");
             try (ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(message.getData());
@@ -190,11 +247,11 @@ public class FileServer implements Server {
 
                 if (typeOfQuery == NetworkConstants.LIST_QUERY) {
                     logger.debug("User asked for list directory");
-                    return new ListQueryHandler(path).handleListQuery(userChannel);
+                    return new ListQueryHandler(path).handleListQuery(clientChannel);
                 }
                 if (typeOfQuery == NetworkConstants.GET_QUERY) {
                     logger.debug("User asked for get file");
-                    return new GetQueryHandler(path).handleGetQuery(userChannel);
+                    return new GetQueryHandler(path).handleGetQuery(clientChannel);
                 }
             } catch (IOException | ClassNotFoundException e) {
                 e.printStackTrace();
