@@ -1,13 +1,10 @@
 language: java
 
 sudo: false
-
 addons:
-
-apt:
-  
-packages:
-- oracle-java8-installer
+  apt:
+    packages:
+      - oracle-java8-installer
 
 jdk:
   - oraclejdk8
@@ -17,5 +14,4 @@ env:
   - PROJECT_DIR=ftp
 
 before_install: 
-- chmod +x ./gradlew
 - cd $PROJECT_DIR
