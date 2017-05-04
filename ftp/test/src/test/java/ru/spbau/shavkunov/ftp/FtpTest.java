@@ -26,7 +26,7 @@ public class FtpTest {
 
     public static void init() {} // Empty method to trigger the execution of the block above
 
-    @Test(expected = ConnectException.class)
+    @Test(expected = IOException.class)
     public void initTest() throws IOException, ConnectException {
         Client wrongClient = new FileClient(PORT + 1, hostname);
         wrongClient.connect();
