@@ -238,10 +238,6 @@ public class FileClient implements Client, AutoCloseable {
                     if (selectionKey.isReadable()) {
                         Path pathToLocalCopy = downloads.resolve(path.toFile().getName());
 
-                        FileChannel fileChannel = FileChannel.open(pathToLocalCopy, StandardOpenOption.CREATE,
-                                                                                    StandardOpenOption.WRITE,
-                                                                                    StandardOpenOption.TRUNCATE_EXISTING);
-
 
                         ByteBuffer length = ByteBuffer.allocate(Message.longLengthBytes);
 
@@ -257,6 +253,10 @@ public class FileClient implements Client, AutoCloseable {
                         if (fileSize == -1) {
                             throw new FileNotExistsException();
                         }
+
+                        FileChannel fileChannel = FileChannel.open(pathToLocalCopy, StandardOpenOption.CREATE,
+                                StandardOpenOption.WRITE,
+                                StandardOpenOption.TRUNCATE_EXISTING);
 
                         while (fileSize > 0) {
                             long receivedBytes = fileChannel.transferFrom(channel, fileChannel.position(), fileSize);

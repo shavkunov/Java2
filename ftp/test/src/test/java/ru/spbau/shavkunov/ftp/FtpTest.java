@@ -1,12 +1,23 @@
 package ru.spbau.shavkunov.ftp;
 
 import org.junit.Test;
+import ru.spbau.shavkunov.ftp.exceptions.FileNotExistsException;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.ConnectException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
 
-import static ru.spbau.shavkunov.ftp.NetworkConstants.PORT;
-import static ru.spbau.shavkunov.ftp.NetworkConstants.hostname;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static ru.spbau.shavkunov.ftp.NetworkConstants.*;
 
 public class FtpTest {
     private static Server server;
@@ -32,7 +43,7 @@ public class FtpTest {
         wrongClient.connect();
     }
 
-    /*@Test(expected = FileNotExistsException.class)
+    @Test(expected = FileNotExistsException.class)
     public void listOfInvalidFile() throws FileNotExistsException {
         client.executeList("thisPathDoesn'tExist");
     }
@@ -91,5 +102,5 @@ public class FtpTest {
         assertEquals(10_000_000, standardDownloadsFolder.resolve("tmpFile").toFile().length());
 
         path.toFile().delete();
-    } */
+    }
 }
