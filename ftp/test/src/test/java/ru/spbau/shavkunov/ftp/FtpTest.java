@@ -1,26 +1,7 @@
 package ru.spbau.shavkunov.ftp;
 
-import org.junit.Test;
-import ru.spbau.shavkunov.ftp.exceptions.FileNotExistsException;
-
-import java.io.File;
-import java.io.IOException;
-import java.net.ConnectException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
-
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.*;
-import static ru.spbau.shavkunov.ftp.NetworkConstants.PORT;
-import static ru.spbau.shavkunov.ftp.NetworkConstants.hostname;
-import static ru.spbau.shavkunov.ftp.NetworkConstants.standardDownloadsFolder;
-
 public class FtpTest {
-    private static Server server;
+    /*private static Server server;
     private static Client client;
 
     static {
@@ -102,5 +83,5 @@ public class FtpTest {
         assertEquals(10_000_000, standardDownloadsFolder.resolve("tmpFile").toFile().length());
 
         path.toFile().delete();
-    }
+    }*/
 }
