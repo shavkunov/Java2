@@ -2,4 +2,6 @@ rootProject.name = 'ftp'
 include 'server'
 include 'client'
 include 'messages'
+include 'gui'
+include 'test'
 
