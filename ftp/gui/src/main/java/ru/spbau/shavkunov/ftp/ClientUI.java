@@ -4,26 +4,30 @@ import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.geometry.Insets;
 import javafx.scene.Group;
+import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
+import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.VBox;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.Stage;
+import javafx.util.Pair;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import ru.spbau.shavkunov.ftp.exceptions.ConnectionException;
 import ru.spbau.shavkunov.ftp.exceptions.FileNotExistsException;
 import ru.spbau.shavkunov.ftp.exceptions.NotConnectedException;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.ConnectException;
 import java.net.URISyntaxException;
 import java.nio.file.NotDirectoryException;
 import java.nio.file.Path;
@@ -138,7 +142,10 @@ public class ClientUI extends Application {
         if (!result.isPresent()) {
             // network closed
             items.clear();
+            return;
         }
+
+        filesInDirectory = result.get();
 
         if (filesInDirectory.size() > 0) {
             // cleaning previous content to add a new one
@@ -319,18 +326,89 @@ public class ClientUI extends Application {
 
         connectButton.setOnAction(actionEvent ->  {
             try {
-                client = new FileClient(PORT, NetworkConstants.hostname, downloads);
-                client.connect();
+                Optional<Pair<String, Integer>> pair = getHostInformationDialog();
+
+                if (pair.isPresent()) {
+                    client = new FileClient(pair.get().getValue(), pair.get().getKey(), downloads);
+                    client.connect();
+                }
+
                 updateListView(images);
-            } catch (IOException e) {
-                e.printStackTrace();
-            } catch (ConnectionException e) {
+            } catch (ConnectException e) {
                 showConnectionErrorDialog();
                 e.printStackTrace();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+            if (client == null || !client.isConnected()) {
+                ((Node)(actionEvent.getSource())).getScene().getWindow().hide();
             }
         });
 
         pane.getChildren().add(connectButton);
+    }
+
+    private @NotNull Optional<Pair<String, Integer>> getHostInformationDialog() {
+        Dialog<Pair<String, Integer>> dialog = new Dialog<>();
+        dialog.setTitle("Open connection");
+        dialog.setHeaderText(null);
+
+        ButtonType connectButtonType = new ButtonType("Connect", ButtonBar.ButtonData.OK_DONE);
+        dialog.getDialogPane().getButtonTypes().addAll(connectButtonType, ButtonType.CANCEL);
+
+        GridPane grid = new GridPane();
+        grid.setHgap(10);
+        grid.setVgap(10);
+        grid.setPadding(new Insets(20, 150, 10, 10));
+
+        // handle user text
+        TextField hostname = new TextField();
+        TextField port = new TextField();
+
+        Node connectButton = dialog.getDialogPane().lookupButton(connectButtonType);
+        connectButton.setDisable(true);
+
+        hostname.textProperty().addListener((observable, oldValue, newValue) -> {
+            connectButton.setDisable(newValue.trim().isEmpty());
+        });
+
+        port.textProperty().addListener((observable, oldValue, newValue) -> {
+            if (newValue.isEmpty()) {
+                connectButton.setDisable(newValue.isEmpty());
+            }
+
+            try {
+                Integer.parseInt(newValue);
+            } catch (NumberFormatException e) {
+                connectButton.setDisable(true);
+            }
+
+        });
+
+        grid.add(new Label("Hostname :"), 0, 0);
+        grid.add(hostname, 1, 0);
+        grid.add(new Label("Port :"), 0, 1);
+        grid.add(port, 1, 1);
+
+        Node loginButton = dialog.getDialogPane().lookupButton(connectButtonType);
+        loginButton.setDisable(true);
+
+        dialog.getDialogPane().setContent(grid);
+
+        Platform.runLater(hostname::requestFocus);
+
+        dialog.setResultConverter(dialogButton -> {
+            if (dialogButton == connectButtonType) {
+                return new Pair<>(hostname.getText(), Integer.parseInt(port.getText()));
+            }
+
+            return null;
+        });
+
+        Optional<Pair<String, Integer>> result = dialog.showAndWait();
+
+        return result;
     }
 
     /**

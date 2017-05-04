@@ -4,7 +4,6 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import ru.spbau.shavkunov.ftp.exceptions.ConnectionException;
 import ru.spbau.shavkunov.ftp.exceptions.FileNotExistsException;
 import ru.spbau.shavkunov.ftp.exceptions.InvalidMessageException;
 import ru.spbau.shavkunov.ftp.exceptions.NotConnectedException;
@@ -13,6 +12,7 @@ import ru.spbau.shavkunov.ftp.message.MessageReader;
 import ru.spbau.shavkunov.ftp.message.MessageWriter;
 
 import java.io.*;
+import java.net.ConnectException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.*;
@@ -91,15 +91,11 @@ public class FileClient implements Client, AutoCloseable {
     }
 
     @Override
-    public void connect() throws IOException, ConnectionException {
+    public void connect() throws IOException, ConnectException {
         logger.debug("connecting");
 
         selector = Selector.open();
         channel = SocketChannel.open(address);
-
-        if (!channel.isConnected()) {
-            throw new ConnectionException();
-        }
 
         channel.configureBlocking(false);
         channel.register(selector, SelectionKey.OP_WRITE);
@@ -119,7 +115,7 @@ public class FileClient implements Client, AutoCloseable {
     public @NotNull Optional<Map<String, Boolean>> executeList(@NotNull String path) throws FileNotExistsException {
         logger.debug("Executing list with path : {}", path);
         try {
-            while (channel != null && channel.isConnected()) {
+            while (channel != null && isConnected()) {
                 logger.debug("Selecting keys");
                 selector.select(SELECTING_TIMEOUT);
                 Iterator<SelectionKey> iterator = selector.selectedKeys().iterator();
@@ -148,7 +144,7 @@ public class FileClient implements Client, AutoCloseable {
                         logger.debug("Read response from server");
                         selectionKey.interestOps(SelectionKey.OP_WRITE);
 
-                        if (message.equals(EMPTY_MESSAGE)) {
+                        if (message.compareTo(EMPTY_MESSAGE) == 0) {
                             throw new FileNotExistsException();
                         }
 
@@ -228,7 +224,7 @@ public class FileClient implements Client, AutoCloseable {
         try {
             Path path = Paths.get(pathToFile);
 
-            while (channel != null && channel.isConnected()) {
+            while (channel != null && isConnected()) {
                 selector.select();
                 Iterator<SelectionKey> iterator = selector.selectedKeys().iterator();
                 while (iterator.hasNext()) {
@@ -247,26 +243,36 @@ public class FileClient implements Client, AutoCloseable {
 
                     if (selectionKey.isReadable()) {
                         Path pathToLocalCopy = downloads.resolve(path.toFile().getName());
-                        pathToLocalCopy.toFile().createNewFile();
 
-                        FileChannel fileChannel = FileChannel.open(pathToLocalCopy, StandardOpenOption.WRITE,
+                        FileChannel fileChannel = FileChannel.open(pathToLocalCopy, StandardOpenOption.CREATE,
+                                                                                    StandardOpenOption.WRITE,
                                                                                     StandardOpenOption.TRUNCATE_EXISTING);
 
 
                         ByteBuffer length = ByteBuffer.allocate(Message.longLengthBytes);
 
+                        logger.debug("Getting file size");
                         while (length.hasRemaining()) {
                             channel.read(length);
                         }
 
                         length.flip();
                         long fileSize = length.getLong();
+                        logger.debug("File size is {}", fileSize);
 
-                        long receivedBytes = fileChannel.transferFrom(channel, 0, fileSize);
-                        while (receivedBytes != fileSize) {
-                            receivedBytes = fileChannel.transferFrom(channel, receivedBytes, fileSize);
+                        if (fileSize == -1) {
+                            throw new FileNotExistsException();
                         }
 
+                        while (fileSize > 0) {
+                            long receivedBytes = fileChannel.transferFrom(channel, fileChannel.position(), fileSize);
+                            fileChannel.position(fileChannel.position() + receivedBytes);
+                            logger.debug("Received bytes : {}", receivedBytes);
+                            fileSize -= receivedBytes;
+                            logger.debug("Size remaining : {}", fileSize);
+                        }
+
+                        logger.debug("File is downloaded");
                         selectionKey.interestOps(SelectionKey.OP_WRITE);
                         return Optional.of(pathToLocalCopy.toFile());
                     }
@@ -291,6 +297,11 @@ public class FileClient implements Client, AutoCloseable {
         }
 
         throw new NotDirectoryException(path.toString());
+    }
+
+    @Override
+    public boolean isConnected() {
+        return channel.isConnected();
     }
 
     @Override

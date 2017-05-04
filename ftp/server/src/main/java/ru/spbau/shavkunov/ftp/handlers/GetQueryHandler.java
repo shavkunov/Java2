@@ -4,14 +4,11 @@ import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ru.spbau.shavkunov.ftp.message.FileWriter;
-import ru.spbau.shavkunov.ftp.message.MessageWriter;
 import ru.spbau.shavkunov.ftp.message.Writer;
 
 import java.io.IOException;
 import java.nio.channels.WritableByteChannel;
 import java.nio.file.Path;
-
-import static ru.spbau.shavkunov.ftp.NetworkConstants.EMPTY_MESSAGE;
 
 /**
  * Class handles get task.
@@ -43,7 +40,7 @@ public class GetQueryHandler {
         logger.debug("Handling get task");
 
         if (path.toFile().isDirectory() || !path.toFile().exists()) {
-            return new MessageWriter(EMPTY_MESSAGE, channel);
+            return new FileWriter(channel);
         }
 
         return new FileWriter(path, channel);

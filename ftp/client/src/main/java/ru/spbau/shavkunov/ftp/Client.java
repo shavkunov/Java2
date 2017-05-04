@@ -1,12 +1,12 @@
 package ru.spbau.shavkunov.ftp;
 
 import org.jetbrains.annotations.NotNull;
-import ru.spbau.shavkunov.ftp.exceptions.ConnectionException;
 import ru.spbau.shavkunov.ftp.exceptions.FileNotExistsException;
 import ru.spbau.shavkunov.ftp.exceptions.NotConnectedException;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.ConnectException;
 import java.nio.file.NotDirectoryException;
 import java.nio.file.Path;
 import java.util.Map;
@@ -20,7 +20,7 @@ public interface Client {
      * Connect to server.
      * @throws IOException if an I/O error occurs.
      */
-    void connect() throws IOException, ConnectionException;
+    void connect() throws IOException, ConnectException;
 
     /**
      * Disconnect from server.
@@ -51,4 +51,10 @@ public interface Client {
      * @throws NotDirectoryException if provided path isn't a directory.
      */
     void setNewDownloadsFolder(@NotNull Path path) throws NotDirectoryException;
+
+    /**
+     * Returns true if client connected to server.
+     * @return true if client connected to server.
+     */
+    boolean isConnected();
 }

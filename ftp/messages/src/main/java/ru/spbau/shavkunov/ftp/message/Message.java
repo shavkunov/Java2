@@ -2,10 +2,12 @@ package ru.spbau.shavkunov.ftp.message;
 
 import org.jetbrains.annotations.NotNull;
 
+import java.util.Arrays;
+
 /**
  * Class representing a message, which can be read or written.
  */
-public class Message {
+public class Message implements Comparable<Message> {
     /**
      * Size of int length buffer.
      */
@@ -43,5 +45,14 @@ public class Message {
      */
     public @NotNull byte[] getData() {
         return data;
+    }
+
+    @Override
+    public int compareTo(Message o) {
+        if (Arrays.equals(data, o.getData())) {
+            return 0;
+        }
+
+        return 1;
     }
 }

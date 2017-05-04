@@ -55,7 +55,6 @@ public class FileServer implements Server {
         serverThread = new Thread(new RunningService(port));
     }
 
-    // TODO : move to test side.
     private void createServerFiles() {
         Path rootPath = Paths.get("test").normalize();
         rootPath.toFile().mkdir();
