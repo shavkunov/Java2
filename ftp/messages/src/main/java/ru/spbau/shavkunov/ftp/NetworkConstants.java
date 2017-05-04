@@ -13,7 +13,7 @@ public class NetworkConstants {
     /**
      * port which server are listen to.
      */
-    public static int PORT = 12342;
+    public static int PORT = 40000;
 
     /**
      * Local server name.
