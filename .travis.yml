@@ -7,4 +7,6 @@ env:
   - PROJECT_DIR=lazy
   - PROJECT_DIR=ftp
 
-before_install: cd $PROJECT_DIR
+before_install: 
+- chmod +x gradlew
+- cd $PROJECT_DIR
