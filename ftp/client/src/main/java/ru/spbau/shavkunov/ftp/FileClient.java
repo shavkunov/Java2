@@ -154,11 +154,7 @@ public class FileClient implements Client, AutoCloseable {
                     iterator.remove();
                 }
             }
-        } catch (ClosedChannelException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (InvalidMessageException e) {
+        } catch (IOException | InvalidMessageException e) {
             e.printStackTrace();
         }
 
@@ -209,9 +205,7 @@ public class FileClient implements Client, AutoCloseable {
                 boolean isDir = input.readBoolean();
                 parsedMessage.put(filename, isDir);
             }
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (ClassNotFoundException e) {
+        } catch (IOException | ClassNotFoundException e) {
             e.printStackTrace();
         }
 
@@ -280,8 +274,6 @@ public class FileClient implements Client, AutoCloseable {
                 }
 
             }
-        } catch (ClosedChannelException e) {
-            e.printStackTrace();
         } catch (IOException e) {
             e.printStackTrace();
         }

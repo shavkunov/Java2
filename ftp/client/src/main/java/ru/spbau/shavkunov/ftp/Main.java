@@ -7,7 +7,7 @@ import java.net.ConnectException;
 import java.util.Scanner;
 
 /**
- * ClI interface for client.
+ * ClI for client.
  */
 public class Main {
     private static final String LIST_COMMAND = "list";

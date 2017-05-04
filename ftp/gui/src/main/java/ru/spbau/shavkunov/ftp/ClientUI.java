@@ -421,9 +421,7 @@ public class ClientUI extends Application {
         disconnectButton.setOnAction(actionEvent ->  {
             try {
                 client.disconnect();
-            } catch (IOException e) {
-                e.printStackTrace();
-            } catch (NotConnectedException e) {
+            } catch (IOException | NotConnectedException e) {
                 e.printStackTrace();
             }
         });
