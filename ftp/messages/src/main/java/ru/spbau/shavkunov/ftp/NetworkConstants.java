@@ -33,7 +33,7 @@ public class NetworkConstants {
     /**
      * Downloads folder in user System.
      */
-    public static final @NotNull Path standardDownloadsFolder = Paths.get(System.getProperty("user.home")).resolve("Downloads");
+    public static final @NotNull Path standardDownloadsFolder = Paths.get(".");
 
     /**
      * Zero byte array representing lack of information.
