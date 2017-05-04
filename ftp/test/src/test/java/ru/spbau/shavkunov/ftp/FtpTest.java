@@ -1,7 +1,15 @@
 package ru.spbau.shavkunov.ftp;
 
+import org.junit.Test;
+
+import java.io.IOException;
+import java.net.ConnectException;
+
+import static ru.spbau.shavkunov.ftp.NetworkConstants.PORT;
+import static ru.spbau.shavkunov.ftp.NetworkConstants.hostname;
+
 public class FtpTest {
-    /*private static Server server;
+    private static Server server;
     private static Client client;
 
     static {
@@ -24,7 +32,7 @@ public class FtpTest {
         wrongClient.connect();
     }
 
-    @Test(expected = FileNotExistsException.class)
+    /*@Test(expected = FileNotExistsException.class)
     public void listOfInvalidFile() throws FileNotExistsException {
         client.executeList("thisPathDoesn'tExist");
     }
@@ -83,5 +91,5 @@ public class FtpTest {
         assertEquals(10_000_000, standardDownloadsFolder.resolve("tmpFile").toFile().length());
 
         path.toFile().delete();
-    }*/
+    } */
 }
