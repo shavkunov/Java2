@@ -11,7 +11,7 @@ public class SuccessTest {
     }
 
     @Test
-    public void successfulTest() {
-
+    public void successfulTest() throws InterruptedException {
+        Thread.sleep(5);
     }
 }
