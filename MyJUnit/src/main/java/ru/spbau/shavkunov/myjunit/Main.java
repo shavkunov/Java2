@@ -43,6 +43,11 @@ public class Main {
         testClasses(directory, System.out);
     }
 
+    /**
+     * Tests class files located in specified directory in write results in specified stream.
+     * @param directory directory, where class files are located.
+     * @param printStream print stream, where result of tests will be written.
+     */
     public static void testClasses(@NotNull Path directory, @NotNull PrintStream printStream) {
         try {
             List<Class<?>> classes = getTestClasses(directory);
@@ -77,6 +82,7 @@ public class Main {
      * Show results of testing class file.
      * @param results testing method results of class.
      * @param testClass underlying test class.
+     * @param printStream stream, where result will be written.
      */
     private static void showResults(@NotNull List<TestResult> results,
                                     @NotNull Class testClass,
