@@ -1,15 +1,14 @@
 package ru.spbau.shavkunov.myjunit;
 
-import org.apache.commons.io.FilenameUtils;
 import org.jetbrains.annotations.NotNull;
 import ru.spbau.shavkunov.myjunit.exceptions.InvalidCallMethodException;
 import ru.spbau.shavkunov.myjunit.exceptions.InvalidCreatingInstanceException;
 import ru.spbau.shavkunov.myjunit.primitives.TestResult;
 
-import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -104,17 +103,20 @@ public class Main {
      * @return list of loaded class files.
      * @throws IOException if any IO exception occurs during load test classes.
      */
-    private static @NotNull List<Class<?>> getTestClasses(@NotNull Path directory)
-            throws IOException {
+    private static @NotNull List<Class<?>> getTestClasses(@NotNull Path directory) throws IOException {
+        ArrayList<Path> fileClasses = new ArrayList<>();
+        Files.walk(directory).filter(Files::isRegularFile)
+                             .filter(file -> file.endsWith(".class"))
+                             .forEach(file -> fileClasses.add(file));
         ClassLoader classLoader = new URLClassLoader(new URL[]{directory.toUri().toURL()});
 
         ArrayList<Class<?>> classes = new ArrayList<>();
-        for (File file : directory.toFile().listFiles()) {
-            String classWithTests = FilenameUtils.removeExtension(file.getName());
+        for (Path path : fileClasses) {
             Class loadedClass = null;
 
+            String pathToClass = path.toFile().getName();
             try {
-                loadedClass = classLoader.loadClass(classWithTests);
+                loadedClass = classLoader.loadClass(pathToClass);
             } catch (ClassNotFoundException e) {
                 throw new RuntimeException(e);
             }
