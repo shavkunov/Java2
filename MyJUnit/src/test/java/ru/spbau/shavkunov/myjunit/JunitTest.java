@@ -4,15 +4,12 @@ import org.hamcrest.BaseMatcher;
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.junit.Test;
-import ru.spbau.shavkunov.myjunit.exceptions.InvalidCallMethodException;
-import ru.spbau.shavkunov.myjunit.exceptions.InvalidCreatingInstanceException;
+import ru.spbau.shavkunov.myjunit.exceptions.*;
 import ru.spbau.shavkunov.myjunit.primitives.*;
 
 import java.util.List;
 
-import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.hamcrest.Matchers.empty;
-import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.assertThat;
 import static ru.spbau.shavkunov.myjunit.primitives.TestResult.Status.FAIL;
 import static ru.spbau.shavkunov.myjunit.primitives.TestResult.Status.SUCCESSFUL;
@@ -78,14 +75,14 @@ public class JunitTest {
         throw new InvalidCallMethodException();
     }
 
-    @Test(expected = InvalidCallMethodException.class)
+    @Test(expected = InvalidCallBeforeMethodException.class)
     public void beforeFailTest() throws Exception {
         Class testClass = Class.forName(classPrefix + ".BeforeFailTest");
         Tester tester = new Tester(testClass);
         tester.executeClass();
     }
 
-    @Test(expected = InvalidCallMethodException.class)
+    @Test(expected = InvalidCallAfterMethodException.class)
     public void afterFailTest() throws Exception {
         Class testClass = Class.forName(classPrefix + ".AfterFailTest");
         Tester tester = new Tester(testClass);
@@ -99,14 +96,14 @@ public class JunitTest {
         tester.executeClass();
     }
 
-    @Test(expected = InvalidCallMethodException.class)
+    @Test(expected = InvalidCallBeforeClassMethodException.class)
     public void beforeClassFailTest() throws Exception {
         Class testClass = Class.forName(classPrefix + ".BeforeClassFailTest");
         Tester tester = new Tester(testClass);
         tester.executeClass();
     }
 
-    @Test(expected = InvalidCallMethodException.class)
+    @Test(expected = InvalidCallAfterClassMethodException.class)
     public void afterClassFailTest() throws Exception {
         Class testClass = Class.forName(classPrefix + ".AfterClassFailTest");
         Tester tester = new Tester(testClass);

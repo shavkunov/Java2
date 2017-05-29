@@ -1,8 +1,7 @@
 package ru.spbau.shavkunov.myjunit;
 
 import org.jetbrains.annotations.NotNull;
-import ru.spbau.shavkunov.myjunit.exceptions.InvalidCallMethodException;
-import ru.spbau.shavkunov.myjunit.exceptions.InvalidCreatingInstanceException;
+import ru.spbau.shavkunov.myjunit.exceptions.*;
 import ru.spbau.shavkunov.myjunit.primitives.TestResult;
 
 import java.io.File;
@@ -30,7 +29,7 @@ public class Main {
      */
     public static void main(String[] args) {
         if (args.length != 1) {
-            System.out.println("Excepted one argument: path to directory");
+            System.out.println("Expected one argument: path to directory");
             return;
         }
 
@@ -58,12 +57,24 @@ public class Main {
                 try {
                     results = tester.executeClass();
                 } catch (InvalidCallMethodException e) {
-                    printStream.println("Invocation of method failed in " + testClass);
+                    printStream.println("Invocation of method" + e.getMethod() + " failed in " + testClass);
                     printStream.println(Arrays.toString(e.getStackTrace()));
                 } catch (InvalidCreatingInstanceException e) {
                     printStream.println("Creating of" + testClass + "class instance is failed.");
                     printStream.println(Arrays.toString(e.getStackTrace()));
                 } catch (IllegalAccessException e) {
+                    printStream.println(Arrays.toString(e.getStackTrace()));
+                } catch (InvalidCallBeforeMethodException e) {
+                    printStream.println("Invocation of before method" + e.getMethod() + " failed in " + testClass);
+                    printStream.println(Arrays.toString(e.getStackTrace()));
+                } catch (InvalidCallAfterMethodException e) {
+                    printStream.println("Invocation of after method" + e.getMethod() + " failed in " + testClass);
+                    printStream.println(Arrays.toString(e.getStackTrace()));
+                } catch (InvalidCallBeforeClassMethodException e) {
+                    printStream.println("Invocation of before class method" + e.getMethod() + " failed in " + testClass);
+                    printStream.println(Arrays.toString(e.getStackTrace()));
+                } catch (InvalidCallAfterClassMethodException e) {
+                    printStream.println("Invocation of after class method" + e.getMethod() + " failed in " + testClass);
                     printStream.println(Arrays.toString(e.getStackTrace()));
                 }
 

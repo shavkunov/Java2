@@ -3,9 +3,7 @@ package ru.spbau.shavkunov.myjunit;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import ru.spbau.shavkunov.myjunit.annotations.*;
-import ru.spbau.shavkunov.myjunit.exceptions.InvalidCallMethodException;
-import ru.spbau.shavkunov.myjunit.exceptions.InvalidCreatingInstanceException;
-import ru.spbau.shavkunov.myjunit.exceptions.TestException;
+import ru.spbau.shavkunov.myjunit.exceptions.*;
 import ru.spbau.shavkunov.myjunit.primitives.*;
 
 import java.lang.annotation.Annotation;
@@ -72,11 +70,16 @@ public class Tester {
      * @throws IllegalAccessException if access violation is occurs.
      */
     public List<TestResult> executeClass()
-            throws InvalidCreatingInstanceException, InvalidCallMethodException, IllegalAccessException {
+            throws InvalidCreatingInstanceException, InvalidCallMethodException, IllegalAccessException, InvalidCallBeforeMethodException, InvalidCallAfterMethodException, InvalidCallAfterClassMethodException, InvalidCallBeforeClassMethodException {
         ArrayList<TestResult> testResults = new ArrayList<>();
         divideMethodsIntoGroups(testClass);
 
-        callMethods(methodsBeforeClass, null);
+        try {
+            callMethods(methodsBeforeClass, null);
+        } catch (InvalidCallMethodException exception) {
+            throw new InvalidCallBeforeClassMethodException(exception.getMethod());
+        }
+
         for (Method method : testMethods) {
             Annotation annotation = method.getAnnotation(Test.class);
             Test test = (Test) annotation;
@@ -99,7 +102,11 @@ public class Tester {
             testResults.add(testMethod(method, instance, expectedException));
         }
 
-        callMethods(methodsAfterClass, null);
+        try {
+            callMethods(methodsAfterClass, null);
+        } catch (InvalidCallMethodException exception) {
+            throw new InvalidCallAfterClassMethodException(exception.getMethod());
+        }
 
         return testResults;
     }
@@ -115,24 +122,35 @@ public class Tester {
      */
     private TestResult testMethod(@NotNull Method method, @NotNull Object instance,
                                   @NotNull Class<? extends Exception> expectedException)
-                                  throws InvalidCallMethodException, IllegalAccessException {
+            throws InvalidCallMethodException, IllegalAccessException, InvalidCallBeforeMethodException, InvalidCallAfterMethodException {
         long startTime = System.currentTimeMillis();
         long elapsedTime;
         try {
-            callMethods(methodsBefore, instance);
+            try {
+                callMethods(methodsBefore, instance);
+            } catch (InvalidCallMethodException exception) {
+                throw new InvalidCallBeforeMethodException(exception.getMethod());
+            }
+
             method.invoke(instance);
-            callMethods(methodsAfter, instance);
+
+            try {
+                callMethods(methodsAfter, instance);
+            } catch (InvalidCallMethodException exception) {
+                throw new InvalidCallAfterMethodException(exception.getMethod());
+            }
+
         } catch (InvocationTargetException exception) {
             Throwable target = exception.getTargetException();
             if (expectedException.isInstance(target)) {
-                // we've got excepted exception
+                // we've got expected exception
                 elapsedTime = System.currentTimeMillis() - startTime;
                 ExceptedTestResult exceptedTestResult = new ExceptedTestResult(method, exception, elapsedTime);
 
                 return exceptedTestResult;
             }
 
-            // we've got exception, but it we didn't except.
+            // we've got exception, that hasn't to be expected.
             elapsedTime = System.currentTimeMillis() - startTime;
             UnexpectedTestResult unexpectedTestResult = new UnexpectedTestResult(method, expectedException,
                                                                                          exception, elapsedTime);
