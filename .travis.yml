@@ -12,6 +12,7 @@ jdk:
 env:
   - PROJECT_DIR=lazy
   - PROJECT_DIR=ftp
+  - PROJECT_DIR=MyJUnit
 
 before_install: 
 - cd $PROJECT_DIR
