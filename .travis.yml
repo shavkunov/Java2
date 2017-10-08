@@ -11,6 +11,7 @@ jdk:
 
 env:
   - PROJECT_DIR=lazy
+  - PROJECT_DIR=vcs
   - PROJECT_DIR=ftp
   - PROJECT_DIR=MyJUnit
 
